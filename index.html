@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>ระบบลงเวลา</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    :root {
+      --bg:       #080c10;
+      --s1:       #0e1419;
+      --s2:       #161d25;
+      --border:   #1e2a35;
+      --accent:   #00d4ff;
+      --green:    #00e676;
+      --red:      #ff4d4d;
+      --yellow:   #ffc107;
+      --text:     #e8f0fe;
+      --muted:    #5c7080;
+      --font:     'Sarabun', sans-serif;
+      --mono:     'IBM Plex Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 0 0 48px;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(180deg, #0a1628 0%, var(--bg) 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 20px 20px 16px;
+      text-align: center;
+      position: relative;
+    }
+    .header::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%; transform: translateX(-50%);
+      width: 120px; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    }
+    .header-logo { font-size: 36px; line-height: 1; margin-bottom: 6px; }
+    .header-title { font-size: 18px; font-weight: 700; letter-spacing: 1px; color: var(--text); }
+    .header-sub   { font-size: 11px; color: var(--muted); margin-top: 2px; letter-spacing: 2px; text-transform: uppercase; }
+
+    #clock {
+      font-family: var(--mono);
+      font-size: 32px;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 3px;
+      margin: 12px 0 2px;
+      text-shadow: 0 0 20px rgba(0,212,255,0.4);
+    }
+    #date-label {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* ── Cards ── */
+    .wrap { padding: 0 16px; }
+    .card {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      margin-top: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 16px; right: 16px; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+    }
+    .card-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    /* ── Input ── */
+    .emp-input {
+      width: 100%;
+      background: var(--s2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 13px 16px;
+      font-size: 20px;
+      font-family: var(--mono);
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      -webkit-appearance: none;
+    }
+    .emp-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0,212,255,0.08);
+    }
+    .emp-input::placeholder { color: var(--muted); font-size: 14px; font-family: var(--font); }
+
+    .emp-result {
+      display: none;
+      margin-top: 10px;
+      padding: 11px 14px;
+      background: var(--s2);
+      border-radius: 10px;
+      border-left: 3px solid var(--green);
+      align-items: center;
+      gap: 10px;
+      animation: fadeIn 0.2s ease;
+    }
+    .emp-result.show  { display: flex; }
+    .emp-result.err   { border-left-color: var(--red); }
+    .emp-result .ava  { font-size: 20px; flex-shrink: 0; }
+    .emp-result .info .name { font-weight: 700; font-size: 15px; }
+    .emp-result .info .sub  { font-size: 12px; color: var(--muted); font-family: var(--mono); margin-top: 2px; }
+
+    /* ── Map ── */
+    #map {
+      height: 190px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .gps-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--yellow); flex-shrink: 0; margin-top: 4px;
+    }
+    .dot.ok  { background: var(--green); }
+    .dot.err { background: var(--red); }
+    .dot.pulse { animation: blink 1.2s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+    /* ── Camera ── */
+    .cam-box {
+      position: relative;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #000;
+      aspect-ratio: 4/3;
+    }
+    #video {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+      transform: scaleX(-1);
+    }
+    #photo-preview {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: none;
+    }
+    .cam-msg {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.75);
+      color: var(--muted);
+      font-size: 14px;
+      text-align: center;
+      padding: 20px;
+      gap: 8px;
+    }
+    .cam-msg .icon { font-size: 36px; }
+    .cam-msg.hidden { display: none; }
+
+    /* shutter */
+    .shutter-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      margin-top: 14px;
+    }
+    .shutter {
+      width: 68px; height: 68px;
+      border-radius: 50%;
+      background: white;
+      border: 4px solid #444;
+      font-size: 26px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: transform 0.1s;
+      flex-shrink: 0;
+    }
+    .shutter:active { transform: scale(0.9); }
+    .shutter:disabled { opacity: 0.3; }
+    .icon-btn {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: var(--s2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .icon-btn:active { opacity: 0.6; }
+
+    .confirm-row {
+      display: none;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .confirm-row.show { display: flex; }
+    .half-btn {
+      flex: 1; padding: 13px; border: none; border-radius: 10px;
+      font-size: 14px; font-family: var(--font); font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-retake  { background: var(--s2); border: 1px solid var(--border); color: var(--muted); }
+    .btn-confirm { background: var(--green); color: #000; }
+
+    /* ── Submit buttons ── */
+    .submit-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .sub-btn {
+      padding: 18px 10px;
+      border: none; border-radius: 14px;
+      font-size: 17px; font-family: var(--font); font-weight: 700;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: transform 0.1s, opacity 0.15s;
+      position: relative; overflow: hidden;
+    }
+    .sub-btn::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 100%);
+      pointer-events: none;
+    }
+    .sub-btn:active { transform: scale(0.96); }
+    .sub-btn:disabled { opacity: 0.25; cursor: not-allowed; transform: none; }
+    .btn-in  { background: var(--green); color: #000; box-shadow: 0 4px 20px rgba(0,230,118,0.25); }
+    .btn-out { background: var(--red);   color: #fff; box-shadow: 0 4px 20px rgba(255,77,77,0.25); }
+
+    /* ── Status toast ── */
+    #toast {
+      display: none;
+      margin: 12px 0 0;
+      padding: 14px 16px;
+      border-radius: 12px;
+      border: 1px solid;
+      text-align: center;
+    }
+    #toast.show    { display: block; animation: fadeIn 0.25s; }
+    #toast.success { background: rgba(0,230,118,0.08); border-color: var(--green); }
+    #toast.error   { background: rgba(255,77,77,0.08);  border-color: var(--red); }
+    #toast.loading { background: rgba(0,212,255,0.08);  border-color: var(--accent); }
+    .toast-icon { font-size: 26px; margin-bottom: 4px; }
+    .toast-text { font-size: 15px; font-weight: 600; }
+
+    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+
+    /* ── GAS API config notice ── */
+    .config-notice {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: rgba(255,193,7,0.07);
+      border: 1px solid rgba(255,193,7,0.2);
+      font-size: 13px;
+      color: var(--yellow);
+      display: none;
+    }
+    .config-notice.show { display: block; }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-logo">🏢</div>
+  <div class="header-title">ระบบลงเวลา</div>
+  <div class="header-sub">Attendance System</div>
+  <div id="clock">--:--:--</div>
+  <div id="date-label">--</div>
+</div>
+
+<div class="wrap">
+
+  <!-- Config notice (แสดงถ้ายังไม่ได้ใส่ GAS URL) -->
+  <div class="config-notice" id="config-notice">
+    ⚠️ กรุณาใส่ GAS_API_URL ในไฟล์ก่อน deploy
+  </div>
+
+  <!-- Toast -->
+  <div id="toast">
+    <div class="toast-icon" id="toast-icon"></div>
+    <div class="toast-text" id="toast-text"></div>
+  </div>
+
+  <!-- Employee -->
+  <div class="card">
+    <div class="card-label">👤 รหัสพนักงาน</div>
+    <input class="emp-input" id="emp-id" type="text"
+      placeholder="กรอกรหัสพนักงาน"
+      inputmode="numeric" autocomplete="off" spellcheck="false"
+      oninput="onEmpInput()">
+    <div class="emp-result" id="emp-result">
+      <div class="ava" id="emp-ava">👤</div>
+      <div class="info">
+        <div class="name" id="emp-name"></div>
+        <div class="sub"  id="emp-sub"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GPS -->
+  <div class="card">
+    <div class="card-label">📍 ตำแหน่ง GPS</div>
+    <div id="map"></div>
+    <div class="gps-row">
+      <div class="dot pulse" id="gps-dot"></div>
+      <span id="gps-text">กำลังหาตำแหน่ง...</span>
+    </div>
+  </div>
+
+  <!-- Camera -->
+  <div class="card">
+    <div class="card-label">📷 ถ่ายภาพยืนยัน</div>
+    <div class="cam-box">
+      <video id="video" autoplay playsinline muted></video>
+      <img  id="photo-preview" alt="preview">
+      <div class="cam-msg" id="cam-msg">
+        <div class="icon">⏳</div>
+        <span>กำลังเปิดกล้อง...</span>
+      </div>
+    </div>
+
+    <div class="shutter-row" id="shutter-row">
+      <button class="icon-btn" onclick="flipCam()" title="สลับกล้อง">🔄</button>
+      <button class="shutter"  id="shutter" onclick="snap()" disabled>📸</button>
+      <div style="width:44px"></div>
+    </div>
+
+    <div class="confirm-row" id="confirm-row">
+      <button class="half-btn btn-retake"  onclick="retake()">🔄 ถ่ายใหม่</button>
+      <button class="half-btn btn-confirm" onclick="confirmPhoto()">✅ ใช้รูปนี้</button>
+    </div>
+  </div>
+
+  <!-- Submit -->
+  <div class="submit-row">
+    <button class="sub-btn btn-in"  id="btn-in"  onclick="submit('IN')"  disabled>🟢 เข้างาน</button>
+    <button class="sub-btn btn-out" id="btn-out" onclick="submit('OUT')" disabled>🔴 ออกงาน</button>
+  </div>
+
+</div><!-- /wrap -->
+
+<canvas id="canvas" style="display:none"></canvas>
+
+<script>
+// ════════════════════════════════════════════
+// ⭐ ใส่ URL จาก GAS Deploy ตรงนี้
+const GAS_API_URL = "YOUR_GAS_WEB_APP_URL_HERE";
+// ════════════════════════════════════════════
+const OFFICE_LAT   = 14.57736759075333;
+const OFFICE_LNG   = 100.79379214129247;
+const ALLOW_RADIUS = 100; // เมตร
+
+// ── state ──
+let empData   = null;   // { id, name }
+let gpsData   = null;   // { lat, lng, accuracy, speed }
+let photoB64  = null;   // base64 jpeg
+let facingMode = 'user';
+let stream     = null;
+let empTimer   = null;
+let mapObj, userMarker;
+
+// ── init ──
+document.addEventListener('DOMContentLoaded', () => {
+  if (GAS_API_URL === 'YOUR_GAS_WEB_APP_URL_HERE') {
+    document.getElementById('config-notice').classList.add('show');
+  }
+  initClock();
+  initMap();
+  initGPS();
+  initCamera();
+});
+
+// ── Clock ──────────────────────────────────
+function initClock() {
+  const tick = () => {
+    const n = new Date();
+    document.getElementById('clock').textContent =
+      n.toLocaleTimeString('th-TH', { hour12: false });
+    document.getElementById('date-label').textContent =
+      n.toLocaleDateString('th-TH', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+  };
+  tick(); setInterval(tick, 1000);
+}
+
+// ── Map ────────────────────────────────────
+function initMap() {
+  mapObj = L.map('map', { zoomControl:false, attributionControl:false })
+            .setView([OFFICE_LAT, OFFICE_LNG], 17);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapObj);
+  L.circle([OFFICE_LAT, OFFICE_LNG], {
+    radius: ALLOW_RADIUS, color:'#ff4d4d',
+    fillColor:'#ff4d4d', fillOpacity:0.1, weight:2
+  }).addTo(mapObj);
+  L.marker([OFFICE_LAT, OFFICE_LNG], {
+    icon: L.divIcon({ html:'🏢', className:'', iconSize:[24,24], iconAnchor:[12,12] })
+  }).addTo(mapObj);
+}
+
+function setUserPin(lat, lng) {
+  if (userMarker) mapObj.removeLayer(userMarker);
+  userMarker = L.marker([lat, lng], {
+    icon: L.divIcon({ html:'📍', className:'', iconSize:[24,24], iconAnchor:[12,24] })
+  }).addTo(mapObj);
+  mapObj.setView([lat, lng], 17);
+}
+
+// ── GPS ────────────────────────────────────
+function initGPS() {
+  if (!navigator.geolocation) {
+    setGPS('err', '❌ Browser ไม่รองรับ GPS'); return;
+  }
+  setGPS('pulse', 'กำลังหาตำแหน่ง...');
+  navigator.geolocation.watchPosition(
+    pos => {
+      const { latitude:lat, longitude:lng, accuracy, speed } = pos.coords;
+      gpsData = { lat, lng, accuracy, speed: speed || 0 };
+      setUserPin(lat, lng);
+      const dist   = haversine(lat, lng, OFFICE_LAT, OFFICE_LNG);
+      const inZone = dist <= ALLOW_RADIUS;
+      setGPS(
+        inZone ? 'ok' : 'err',
+        `${inZone ? '✅ อยู่ในพื้นที่' : '❌ นอกพื้นที่'} · ±${Math.round(accuracy)}m · ${Math.round(dist)}m จากบริษัท`
+      );
+      checkReady();
+    },
+    err => {
+      const m = { 1:'❌ กรุณาอนุญาต GPS', 2:'❌ หาตำแหน่งไม่ได้', 3:'❌ GPS หมดเวลา' };
+      setGPS('err', m[err.code] || '❌ GPS error');
+    },
+    { enableHighAccuracy:true, timeout:15000, maximumAge:5000 }
+  );
+}
+
+function setGPS(state, text) {
+  const dot = document.getElementById('gps-dot');
+  dot.className = 'dot' + (state === 'pulse' ? ' pulse' : state === 'ok' ? ' ok' : ' err');
+  document.getElementById('gps-text').textContent = text;
+}
+
+// ── Camera ─────────────────────────────────
+async function initCamera() {
+  await startCam('user');
+}
+
+async function startCam(facing) {
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  const msg = document.getElementById('cam-msg');
+  msg.classList.remove('hidden');
+  msg.innerHTML = '<div class="icon">⏳</div><span>กำลังเปิดกล้อง...</span>';
+  document.getElementById('shutter').disabled = true;
+
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode:{ ideal: facing }, width:{ ideal:1280 }, height:{ ideal:960 } },
+      audio: false
+    });
+    const video = document.getElementById('video');
+    video.srcObject = stream;
+    await video.play();
+    video.style.transform = facing === 'user' ? 'scaleX(-1)' : 'scaleX(1)';
+    msg.classList.add('hidden');
+    document.getElementById('shutter').disabled = false;
+  } catch(e) {
+    let txt = '❌ เปิดกล้องไม่ได้';
+    if (e.name === 'NotAllowedError')  txt = '❌ ถูกปฏิเสธสิทธิ์กล้อง<br>กดที่ไอคอนกล้องใน address bar แล้วกด Allow';
+    if (e.name === 'NotFoundError')    txt = '❌ ไม่พบกล้อง';
+    if (e.name === 'NotReadableError') txt = '❌ กล้องถูกใช้อยู่ ปิดแอปอื่นก่อน';
+    msg.innerHTML = `<div class="icon">📷</div><span>${txt}</span>`;
+  }
+}
+
+function flipCam() {
+  facingMode = facingMode === 'user' ? 'environment' : 'user';
+  retake();
+  startCam(facingMode);
+}
+
+function snap() {
+  const video  = document.getElementById('video');
+  const canvas = document.getElementById('canvas');
+  canvas.width  = video.videoWidth  || 640;
+  canvas.height = video.videoHeight || 480;
+  const ctx = canvas.getContext('2d');
+  if (facingMode === 'user') { ctx.translate(canvas.width, 0); ctx.scale(-1, 1); }
+  ctx.drawImage(video, 0, 0);
+  const b64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+
+  // show preview
+  const prev = document.getElementById('photo-preview');
+  prev.src = 'data:image/jpeg;base64,' + b64;
+  prev.style.display = 'block';
+  document.getElementById('video').style.display = 'none';
+  document.getElementById('shutter-row').style.display = 'none';
+  document.getElementById('confirm-row').classList.add('show');
+  document.getElementById('cam-msg').classList.add('hidden');
+
+  // store temporarily — wait for confirm
+  window._pendingB64 = b64;
+}
+
+function retake() {
+  window._pendingB64 = null;
+  photoB64 = null;
+  document.getElementById('photo-preview').style.display = 'none';
+  document.getElementById('photo-preview').src = '';
+  document.getElementById('video').style.display = 'block';
+  document.getElementById('shutter-row').style.display = '';
+  document.getElementById('confirm-row').classList.remove('show');
+  checkReady();
+}
+
+function confirmPhoto() {
+  photoB64 = window._pendingB64;
+  window._pendingB64 = null;
+  document.getElementById('confirm-row').classList.remove('show');
+  // แสดง preview ค้างไว้
+  checkReady();
+  showToast('', '', ''); // clear
+}
+
+// ── Employee ───────────────────────────────
+function onEmpInput() {
+  empData = null;
+  document.getElementById('emp-result').className = 'emp-result';
+  clearTimeout(empTimer);
+  checkReady();
+  const val = document.getElementById('emp-id').value.trim();
+  if (!val) return;
+
+  empTimer = setTimeout(async () => {
+    try {
+      const res = await gasCall('getEmployee', { employee_id: val });
+      const el = document.getElementById('emp-result');
+      if (res.result === 'success') {
+        empData = { id: val, name: res.name };
+        el.className = 'emp-result show';
+        document.getElementById('emp-ava').textContent  = '✅';
+        document.getElementById('emp-name').textContent = res.name;
+        document.getElementById('emp-sub').textContent  = 'รหัส: ' + val;
+      } else {
+        el.className = 'emp-result show err';
+        document.getElementById('emp-ava').textContent  = '❌';
+        document.getElementById('emp-name').textContent = res.message;
+        document.getElementById('emp-sub').textContent  = '';
+      }
+    } catch {
+      showToast('error', '❌', 'เชื่อมต่อ server ไม่ได้');
+    }
+    checkReady();
+  }, 600);
+}
+
+// ── Ready check ────────────────────────────
+function checkReady() {
+  const ok = !!empData && !!gpsData && !!photoB64;
+  document.getElementById('btn-in').disabled  = !ok;
+  document.getElementById('btn-out').disabled = !ok;
+}
+
+// ── Submit ─────────────────────────────────
+async function submit(type) {
+  if (!empData || !gpsData || !photoB64) return;
+  showToast('loading', '⏳', type === 'IN' ? 'กำลังลงเวลาเข้างาน...' : 'กำลังลงเวลาออกงาน...');
+  setBtns(true);
+
+  try {
+    const res = await gasCall('saveAttendance', {
+      employee_id : empData.id,
+      name        : empData.name,
+      status      : type,
+      latitude    : gpsData.lat,
+      longitude   : gpsData.lng,
+      accuracy    : gpsData.accuracy,
+      speed       : gpsData.speed,
+      image       : photoB64
+    });
+    showToast(res.result === 'success' ? 'success' : 'error',
+      res.result === 'success' ? '✅' : '❌', res.message);
+    if (res.result !== 'success') setBtns(false);
+  } catch {
+    showToast('error', '❌', 'เชื่อมต่อ server ไม่ได้');
+    setBtns(false);
+  }
+}
+
+function setBtns(disabled) {
+  document.getElementById('btn-in').disabled  = disabled;
+  document.getElementById('btn-out').disabled = disabled;
+}
+
+// ── GAS API caller ─────────────────────────
+// GAS doPost รับ action + payload ใน JSON body
+async function gasCall(action, payload) {
+  const res = await fetch(GAS_API_URL, {
+    method:  'POST',
+    // GAS doPost ต้องรับแบบ text/plain เพราะ CORS ไม่รองรับ application/json preflight
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body:    JSON.stringify({ action, ...payload })
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+}
+
+// ── Toast ──────────────────────────────────
+function showToast(type, icon, text) {
+  const t = document.getElementById('toast');
+  if (!type) { t.className = ''; return; }
+  t.className = 'show ' + type;
+  document.getElementById('toast-icon').textContent = icon;
+  document.getElementById('toast-text').textContent = text;
+  t.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+// ── Util ───────────────────────────────────
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 6371e3;
+  const p1 = lat1 * Math.PI / 180, p2 = lat2 * Math.PI / 180;
+  const a  = Math.sin((lat2-lat1)*Math.PI/360)**2 +
+             Math.cos(p1)*Math.cos(p2)*Math.sin((lng2-lng1)*Math.PI/360)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+</script>
+</body>
+</html>
