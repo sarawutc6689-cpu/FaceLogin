@@ -540,9 +540,11 @@ function snap() {
   document.getElementById('confirm-row').classList.add('show');
   document.getElementById('cam-msg').classList.add('hidden');
 
-  // store temporarily — wait for confirm
+  // confirm ทันทีไม่ต้องกดปุ่ม
+  photoB64 = b64;
   window._pendingB64 = b64;
-}
+  document.getElementById('confirm-row').classList.remove('show');
+  checkReady();
 
 function retake() {
   window._pendingB64 = null;
