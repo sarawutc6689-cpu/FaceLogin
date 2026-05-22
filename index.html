@@ -224,11 +224,18 @@
     .icon-btn:active { opacity: 0.6; }
 
     .confirm-row {
-      display: none;
-      gap: 10px;
-      margin-top: 12px;
-    }
-    .confirm-row.show { display: flex; }
+  display: none;
+  gap: 10px;
+  margin-top: 12px;
+}
+.confirm-row.show { 
+  display: flex !important;
+  width: 100%;
+}
+.confirm-row .half-btn {
+  flex: 1;
+  min-height: 48px;
+}
     .half-btn {
       flex: 1; padding: 13px; border: none; border-radius: 10px;
       font-size: 14px; font-family: var(--font); font-weight: 700;
