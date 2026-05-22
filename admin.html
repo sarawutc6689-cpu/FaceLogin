@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>Admin Dashboard — ระบบลงเวลา</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:      #f0f2f5;
+      --white:   #ffffff;
+      --border:  #e2e8f0;
+      --text:    #1a202c;
+      --muted:   #718096;
+      --accent:  #2563eb;
+      --green:   #16a34a;
+      --red:     #dc2626;
+      --yellow:  #d97706;
+      --s-green: #dcfce7;
+      --s-red:   #fee2e2;
+      --s-blue:  #dbeafe;
+      --s-yel:   #fef3c7;
+      --font:    'Sarabun', sans-serif;
+      --mono:    'IBM Plex Mono', monospace;
+      --radius:  12px;
+      --shadow:  0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow2: 0 4px 16px rgba(0,0,0,0.10);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* ── Sidebar ── */
+    .layout { display: flex; min-height: 100vh; }
+
+    .sidebar {
+      width: 240px; flex-shrink: 0;
+      background: var(--white);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      position: fixed; top: 0; left: 0; bottom: 0;
+      z-index: 100;
+    }
+    .sidebar-logo {
+      padding: 24px 20px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-logo .logo-icon { font-size: 28px; }
+    .sidebar-logo .logo-title { font-size: 15px; font-weight: 700; margin-top: 4px; color: var(--text); }
+    .sidebar-logo .logo-sub   { font-size: 11px; color: var(--muted); margin-top: 1px; letter-spacing: 1px; }
+
+    .sidebar-nav { padding: 12px 12px; flex: 1; }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: 8px;
+      font-size: 14px; font-weight: 600;
+      cursor: pointer; color: var(--muted);
+      transition: background 0.15s, color 0.15s;
+      margin-bottom: 2px; border: none; background: none; width: 100%; text-align: left;
+    }
+    .nav-item:hover { background: var(--bg); color: var(--text); }
+    .nav-item.active { background: var(--s-blue); color: var(--accent); }
+    .nav-item .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+
+    .sidebar-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      font-size: 12px; color: var(--muted);
+    }
+
+    /* ── Main ── */
+    .main { margin-left: 240px; flex: 1; min-width: 0; }
+
+    .topbar {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 28px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .topbar-title { font-size: 18px; font-weight: 700; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+
+    .date-filter {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 8px 12px;
+      font-size: 13px; font-family: var(--font); color: var(--text);
+    }
+    .date-filter input[type=date] {
+      border: none; background: none; font-family: var(--mono); font-size: 13px;
+      color: var(--text); outline: none; cursor: pointer;
+    }
+    .date-sep { color: var(--muted); }
+
+    .refresh-btn {
+      padding: 8px 14px; border-radius: 8px;
+      background: var(--accent); color: white;
+      border: none; font-size: 13px; font-family: var(--font); font-weight: 600;
+      cursor: pointer; display: flex; align-items: center; gap: 6px;
+      transition: opacity 0.15s;
+    }
+    .refresh-btn:hover { opacity: 0.88; }
+    .refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .content { padding: 24px 28px; }
+
+    /* ── Stats cards ── */
+    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .stat-card {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px;
+      box-shadow: var(--shadow);
+      display: flex; align-items: flex-start; justify-content: space-between;
+    }
+    .stat-card .label { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: 0.5px; margin-bottom: 6px; }
+    .stat-card .value { font-size: 28px; font-weight: 700; font-family: var(--mono); line-height: 1; }
+    .stat-card .sub   { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .stat-card .icon-wrap {
+      width: 40px; height: 40px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+    }
+    .ic-blue   { background: var(--s-blue); }
+    .ic-green  { background: var(--s-green); }
+    .ic-red    { background: var(--s-red); }
+    .ic-yellow { background: var(--s-yel); }
+
+    /* ── Table card ── */
+    .table-card {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: var(--radius); box-shadow: var(--shadow);
+      overflow: hidden; margin-bottom: 24px;
+    }
+    .table-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .table-header h3 { font-size: 15px; font-weight: 700; }
+
+    .search-box {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+      padding: 7px 12px;
+    }
+    .search-box input {
+      border: none; background: none; outline: none;
+      font-family: var(--font); font-size: 13px; color: var(--text); width: 180px;
+    }
+    .search-box input::placeholder { color: var(--muted); }
+
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead { background: var(--bg); }
+    th {
+      padding: 11px 16px; text-align: left;
+      font-size: 11px; font-weight: 700; color: var(--muted);
+      letter-spacing: 0.5px; text-transform: uppercase;
+      border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    td {
+      padding: 12px 16px; border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafbfc; }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: 999px;
+      font-size: 12px; font-weight: 700; font-family: var(--mono);
+    }
+    .badge-in  { background: var(--s-green); color: var(--green); }
+    .badge-out { background: var(--s-red);   color: var(--red); }
+
+    .emp-cell { display: flex; align-items: center; gap: 10px; }
+    .emp-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--s-blue); color: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; flex-shrink: 0;
+    }
+    .emp-name { font-weight: 600; font-size: 13px; }
+    .emp-id   { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+
+    .time-cell { font-family: var(--mono); font-size: 13px; }
+    .date-cell { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    .photo-thumb {
+      width: 36px; height: 36px; border-radius: 6px;
+      object-fit: cover; cursor: pointer;
+      border: 1px solid var(--border);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .photo-thumb:hover { transform: scale(1.08); box-shadow: var(--shadow2); }
+    .no-photo { color: var(--muted); font-size: 12px; }
+
+    /* ── Empty / Loading ── */
+    .table-empty {
+      padding: 48px; text-align: center; color: var(--muted);
+    }
+    .table-empty .empty-icon { font-size: 40px; margin-bottom: 10px; }
+    .table-empty p { font-size: 14px; }
+
+    .spinner {
+      display: inline-block; width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.4); border-top-color: white;
+      border-radius: 50%; animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Summary table (per employee) ── */
+    .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+
+    /* ── Photo modal ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.75); z-index: 999;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; animation: fadeIn 0.2s; }
+    .modal-box {
+      background: var(--white); border-radius: 16px;
+      padding: 20px; max-width: 420px; width: 90%;
+      position: relative;
+    }
+    .modal-box img { width: 100%; border-radius: 10px; display: block; }
+    .modal-info { margin-top: 12px; font-size: 13px; color: var(--muted); }
+    .modal-close {
+      position: absolute; top: 12px; right: 12px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 50%; width: 32px; height: 32px;
+      font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ── Pagination ── */
+    .pagination {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 20px; border-top: 1px solid var(--border);
+      font-size: 13px; color: var(--muted);
+    }
+    .page-btns { display: flex; gap: 6px; }
+    .page-btn {
+      padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border);
+      background: var(--white); font-size: 13px; font-family: var(--font);
+      cursor: pointer; color: var(--text);
+    }
+    .page-btn:hover { background: var(--bg); }
+    .page-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+    .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Export ── */
+    .export-btn {
+      padding: 7px 14px; border-radius: 8px;
+      background: var(--white); border: 1px solid var(--border);
+      font-size: 13px; font-family: var(--font); font-weight: 600;
+      cursor: pointer; color: var(--text); display: flex; align-items: center; gap: 6px;
+    }
+    .export-btn:hover { background: var(--bg); }
+
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; }
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .summary-grid { grid-template-columns: 1fr; }
+      .content { padding: 16px; }
+    }
+    @media (max-width: 500px) {
+      .stats-row { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .topbar { padding: 12px 16px; }
+      .topbar-title { font-size: 15px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🏢</div>
+      <div class="logo-title">Attendance Admin</div>
+      <div class="logo-sub">DASHBOARD</div>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-item active" onclick="showPage('overview')">
+        <span class="nav-icon">📊</span> ภาพรวม
+      </button>
+      <button class="nav-item" onclick="showPage('log')">
+        <span class="nav-icon">📋</span> บันทึกลงเวลา
+      </button>
+      <button class="nav-item" onclick="showPage('summary')">
+        <span class="nav-icon">👥</span> สรุปรายคน
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      อัปเดตล่าสุด:<br>
+      <span id="last-updated" style="font-family:var(--mono);font-size:11px">--</span>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="topbar-title" id="page-title">📊 ภาพรวม</div>
+      <div class="topbar-right">
+        <div class="date-filter">
+          <span>📅</span>
+          <input type="date" id="date-from">
+          <span class="date-sep">–</span>
+          <input type="date" id="date-to">
+        </div>
+        <button class="export-btn" onclick="exportCSV()">⬇️ Export CSV</button>
+        <button class="refresh-btn" id="refresh-btn" onclick="loadData()">
+          <span id="refresh-icon">🔄</span> โหลดข้อมูล
+        </button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- Page: Overview -->
+      <div id="page-overview">
+        <div class="stats-row">
+          <div class="stat-card">
+            <div>
+              <div class="label">เข้างานวันนี้</div>
+              <div class="value" id="stat-in-today">--</div>
+              <div class="sub">คน</div>
+            </div>
+            <div class="icon-wrap ic-green">✅</div>
+          </div>
+          <div class="stat-card">
+            <div>
+              <div class="label">ออกงานวันนี้</div>
+              <div class="value" id="stat-out-today">--</div>
+              <div class="sub">คน</div>
+            </div>
+            <div class="icon-wrap ic-red">🚪</div>
+          </div>
+          <div class="stat-card">
+            <div>
+              <div class="label">รายการในช่วงเวลา</div>
+              <div class="value" id="stat-total">--</div>
+              <div class="sub">รายการ</div>
+            </div>
+            <div class="icon-wrap ic-blue">📋</div>
+          </div>
+          <div class="stat-card">
+            <div>
+              <div class="label">พนักงานทั้งหมด</div>
+              <div class="value" id="stat-emp">--</div>
+              <div class="sub">คน</div>
+            </div>
+            <div class="icon-wrap ic-yellow">👥</div>
+          </div>
+        </div>
+
+        <!-- Recent log -->
+        <div class="table-card">
+          <div class="table-header">
+            <h3>🕐 รายการล่าสุด (20 รายการ)</h3>
+          </div>
+          <div class="table-wrap" id="recent-table-wrap">
+            <div class="table-empty"><div class="empty-icon">⏳</div><p>กด "โหลดข้อมูล" เพื่อดึงข้อมูล</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Page: Log -->
+      <div id="page-log" style="display:none">
+        <div class="table-card">
+          <div class="table-header">
+            <h3>📋 บันทึกลงเวลาทั้งหมด</h3>
+            <div class="search-box">
+              <span>🔍</span>
+              <input type="text" id="search-input" placeholder="ค้นหาชื่อ / รหัส..." oninput="renderLog()">
+            </div>
+          </div>
+          <div class="table-wrap" id="log-table-wrap">
+            <div class="table-empty"><div class="empty-icon">⏳</div><p>กด "โหลดข้อมูล" เพื่อดึงข้อมูล</p></div>
+          </div>
+          <div class="pagination" id="log-pagination" style="display:none">
+            <span id="page-info"></span>
+            <div class="page-btns" id="page-btns"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Page: Summary -->
+      <div id="page-summary" style="display:none">
+        <div class="table-card">
+          <div class="table-header">
+            <h3>👥 สรุปการเข้างานรายคน</h3>
+          </div>
+          <div class="table-wrap" id="summary-table-wrap">
+            <div class="table-empty"><div class="empty-icon">⏳</div><p>กด "โหลดข้อมูล" เพื่อดึงข้อมูล</p></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /layout -->
+
+<!-- Photo Modal -->
+<div class="modal-overlay" id="modal" onclick="closeModal()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <img id="modal-img" src="" alt="attendance photo">
+    <div class="modal-info" id="modal-info"></div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════
+// ⭐ ใส่ URL จาก GAS Deploy ตรงนี้ (URL เดียวกับ index.html)
+const GAS_API_URL = "YOUR_GAS_WEB_APP_URL_HERE";
+// ════════════════════════════════════════════
+
+let allRows   = [];   // raw data จาก GAS
+let filtered  = [];   // หลัง filter
+let curPage   = 1;
+const PER_PAGE = 30;
+let curPageName = 'overview';
+
+// ── Init ──────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  // default date range: วันนี้
+  const today = toDateStr(new Date());
+  // 30 วันย้อนหลัง
+  const past  = toDateStr(new Date(Date.now() - 29*86400000));
+  document.getElementById('date-from').value = past;
+  document.getElementById('date-to').value   = today;
+  loadData();
+});
+
+// ── Navigation ────────────────────────────
+function showPage(name) {
+  curPageName = name;
+  ['overview','log','summary'].forEach(p => {
+    document.getElementById('page-' + p).style.display = p === name ? '' : 'none';
+  });
+  document.querySelectorAll('.nav-item').forEach((el, i) => {
+    el.classList.toggle('active', ['overview','log','summary'][i] === name);
+  });
+  const titles = { overview:'📊 ภาพรวม', log:'📋 บันทึกลงเวลา', summary:'👥 สรุปรายคน' };
+  document.getElementById('page-title').textContent = titles[name];
+  if (allRows.length) renderAll();
+}
+
+// ── Load data ─────────────────────────────
+async function loadData() {
+  const btn  = document.getElementById('refresh-btn');
+  const icon = document.getElementById('refresh-icon');
+  btn.disabled = true;
+  icon.innerHTML = '<span class="spinner"></span>';
+
+  try {
+    const from = document.getElementById('date-from').value;
+    const to   = document.getElementById('date-to').value;
+
+    const res = await fetch(GAS_API_URL, {
+      method:  'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body:    JSON.stringify({ action: 'getAttendance', dateFrom: from, dateTo: to })
+    });
+    const data = await res.json();
+
+    if (data.result === 'success') {
+      allRows = data.rows;
+      document.getElementById('last-updated').textContent =
+        new Date().toLocaleTimeString('th-TH', { hour12: false });
+      renderAll();
+    } else {
+      alert('โหลดข้อมูลไม่ได้: ' + data.message);
+    }
+  } catch(e) {
+    alert('เชื่อมต่อ GAS ไม่ได้ กรุณาตรวจสอบ GAS_API_URL');
+  }
+
+  btn.disabled = false;
+  icon.textContent = '🔄';
+}
+
+// ── Render all ────────────────────────────
+function renderAll() {
+  renderStats();
+  if (curPageName === 'overview') renderRecent();
+  if (curPageName === 'log')     renderLog();
+  if (curPageName === 'summary') renderSummary();
+}
+
+// ── Stats ─────────────────────────────────
+function renderStats() {
+  const today = toDateStr(new Date());
+  const todayRows = allRows.filter(r => toDateStr(new Date(r.datetime)) === today);
+  const inToday   = todayRows.filter(r => r.status === 'IN').length;
+  const outToday  = todayRows.filter(r => r.status === 'OUT').length;
+  const empSet    = new Set(allRows.map(r => r.employee_id));
+
+  document.getElementById('stat-in-today').textContent  = inToday;
+  document.getElementById('stat-out-today').textContent = outToday;
+  document.getElementById('stat-total').textContent     = allRows.length;
+  document.getElementById('stat-emp').textContent       = empSet.size;
+}
+
+// ── Recent (overview) ─────────────────────
+function renderRecent() {
+  const rows = [...allRows].reverse().slice(0, 20);
+  document.getElementById('recent-table-wrap').innerHTML =
+    rows.length ? buildTable(rows) : emptyHTML('ไม่มีข้อมูลในช่วงเวลานี้');
+}
+
+// ── Log (full table + search + pagination) ─
+function renderLog() {
+  const q = (document.getElementById('search-input')?.value || '').toLowerCase();
+  filtered = allRows.filter(r =>
+    r.name.toLowerCase().includes(q) ||
+    String(r.employee_id).includes(q)
+  ).reverse();
+
+  const total = filtered.length;
+  const pages = Math.ceil(total / PER_PAGE) || 1;
+  curPage = Math.min(curPage, pages);
+  const slice = filtered.slice((curPage-1)*PER_PAGE, curPage*PER_PAGE);
+
+  document.getElementById('log-table-wrap').innerHTML =
+    slice.length ? buildTable(slice) : emptyHTML('ไม่พบข้อมูลที่ค้นหา');
+
+  // pagination
+  const pag = document.getElementById('log-pagination');
+  const info = document.getElementById('page-info');
+  const btns = document.getElementById('page-btns');
+  if (total > PER_PAGE) {
+    pag.style.display = '';
+    info.textContent  = `แสดง ${(curPage-1)*PER_PAGE+1}–${Math.min(curPage*PER_PAGE, total)} จาก ${total} รายการ`;
+    let html = `<button class="page-btn" onclick="goPage(${curPage-1})" ${curPage===1?'disabled':''}>‹</button>`;
+    for (let p = Math.max(1, curPage-2); p <= Math.min(pages, curPage+2); p++) {
+      html += `<button class="page-btn ${p===curPage?'active':''}" onclick="goPage(${p})">${p}</button>`;
+    }
+    html += `<button class="page-btn" onclick="goPage(${curPage+1})" ${curPage===pages?'disabled':''}>›</button>`;
+    btns.innerHTML = html;
+  } else {
+    pag.style.display = 'none';
+  }
+}
+
+function goPage(p) { curPage = p; renderLog(); }
+
+// ── Summary (per employee) ─────────────────
+function renderSummary() {
+  const empMap = {};
+  allRows.forEach(r => {
+    if (!empMap[r.employee_id]) empMap[r.employee_id] = { name: r.name, in: 0, out: 0, lastSeen: '' };
+    if (r.status === 'IN')  empMap[r.employee_id].in++;
+    if (r.status === 'OUT') empMap[r.employee_id].out++;
+    empMap[r.employee_id].lastSeen = r.datetime;
+  });
+
+  const rows = Object.entries(empMap).map(([id, v]) => ({ id, ...v }));
+  if (!rows.length) {
+    document.getElementById('summary-table-wrap').innerHTML = emptyHTML('ไม่มีข้อมูล');
+    return;
+  }
+
+  let html = `<table><thead><tr>
+    <th>พนักงาน</th>
+    <th>เข้างาน (ครั้ง)</th>
+    <th>ออกงาน (ครั้ง)</th>
+    <th>วันทำงาน</th>
+    <th>ลงเวลาล่าสุด</th>
+  </tr></thead><tbody>`;
+
+  rows.forEach(r => {
+    const days = r.in; // นับครั้ง IN = จำนวนวันทำงาน
+    const dt   = r.lastSeen ? fmtDT(new Date(r.lastSeen)) : '--';
+    html += `<tr>
+      <td><div class="emp-cell">
+        <div class="emp-avatar">${r.name.charAt(0)}</div>
+        <div><div class="emp-name">${r.name}</div><div class="emp-id">${r.id}</div></div>
+      </div></td>
+      <td><span class="badge badge-in">✅ ${r.in}</span></td>
+      <td><span class="badge badge-out">🚪 ${r.out}</span></td>
+      <td><b>${days}</b> วัน</td>
+      <td><div class="time-cell">${dt}</div></td>
+    </tr>`;
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('summary-table-wrap').innerHTML = html;
+}
+
+// ── Build table HTML ──────────────────────
+function buildTable(rows) {
+  let html = `<table><thead><tr>
+    <th>พนักงาน</th>
+    <th>วัน / เวลา</th>
+    <th>สถานะ</th>
+    <th>รูป</th>
+    <th>พิกัด</th>
+  </tr></thead><tbody>`;
+
+  rows.forEach(r => {
+    const dt   = r.datetime ? new Date(r.datetime) : null;
+    const time = dt ? dt.toLocaleTimeString('th-TH', { hour12:false }) : '--';
+    const date = dt ? dt.toLocaleDateString('th-TH', { day:'numeric', month:'short', year:'2-digit' }) : '--';
+    const badge = r.status === 'IN'
+      ? '<span class="badge badge-in">🟢 IN</span>'
+      : '<span class="badge badge-out">🔴 OUT</span>';
+    const photo = r.image_url
+      ? `<img class="photo-thumb" src="${r.image_url}" alt="photo"
+           onclick="openModal('${r.image_url}','${r.name} · ${date} · ${time}')">`
+      : '<span class="no-photo">—</span>';
+    const coord = (r.latitude && r.longitude)
+      ? `<a href="https://maps.google.com/?q=${r.latitude},${r.longitude}" target="_blank"
+           style="color:var(--accent);font-size:12px;font-family:var(--mono)">
+           ${(+r.latitude).toFixed(5)},${(+r.longitude).toFixed(5)}</a>`
+      : '—';
+
+    html += `<tr>
+      <td><div class="emp-cell">
+        <div class="emp-avatar">${r.name ? r.name.charAt(0) : '?'}</div>
+        <div><div class="emp-name">${r.name}</div><div class="emp-id">${r.employee_id}</div></div>
+      </div></td>
+      <td><div class="time-cell">${time}</div><div class="date-cell">${date}</div></td>
+      <td>${badge}</td>
+      <td>${photo}</td>
+      <td>${coord}</td>
+    </tr>`;
+  });
+
+  return html + '</tbody></table>';
+}
+
+// ── Modal ─────────────────────────────────
+function openModal(url, info) {
+  document.getElementById('modal-img').src  = url;
+  document.getElementById('modal-info').textContent = info;
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+  document.getElementById('modal-img').src = '';
+}
+
+// ── Export CSV ────────────────────────────
+function exportCSV() {
+  if (!allRows.length) { alert('ยังไม่มีข้อมูล'); return; }
+  const header = 'รหัสพนักงาน,ชื่อ,วันเวลา,สถานะ,Latitude,Longitude,รูป';
+  const lines  = allRows.map(r =>
+    [r.employee_id, r.name, r.datetime, r.status, r.latitude, r.longitude, r.image_url]
+    .map(v => `"${String(v||'').replace(/"/g,'""')}"`).join(',')
+  );
+  const blob = new Blob(['\uFEFF' + header + '\n' + lines.join('\n')], { type:'text/csv;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const a    = Object.assign(document.createElement('a'), {
+    href: url, download: `attendance_${toDateStr(new Date())}.csv`
+  });
+  a.click(); URL.revokeObjectURL(url);
+}
+
+// ── Helpers ───────────────────────────────
+function toDateStr(d) {
+  return d.getFullYear() + '-' +
+    String(d.getMonth()+1).padStart(2,'0') + '-' +
+    String(d.getDate()).padStart(2,'0');
+}
+function fmtDT(d) {
+  return d.toLocaleDateString('th-TH',{day:'numeric',month:'short'}) + ' ' +
+         d.toLocaleTimeString('th-TH',{hour12:false});
+}
+function emptyHTML(msg) {
+  return `<div class="table-empty"><div class="empty-icon">📭</div><p>${msg}</p></div>`;
+}
+</script>
+</body>
+</html>
