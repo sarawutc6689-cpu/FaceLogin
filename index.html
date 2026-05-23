@@ -1,422 +1,279 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>ระบบลงเวลา</title>
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
-  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-
-  <style>
-    :root {
-      --bg:     #080c10;
-      --s1:     #0e1419;
-      --s2:     #161d25;
-      --border: #1e2a35;
-      --accent: #00d4ff;
-      --green:  #00e676;
-      --red:    #ff4d4d;
-      --yellow: #ffc107;
-      --text:   #e8f0fe;
-      --muted:  #5c7080;
-      --font:   'Sarabun', sans-serif;
-      --mono:   'IBM Plex Mono', monospace;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-    body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; padding: 0 0 48px; }
-
-    .header { background: linear-gradient(180deg,#0a1628 0%,var(--bg) 100%); border-bottom: 1px solid var(--border); padding: 20px 20px 16px; text-align: center; position: relative; }
-    .header::before { content:''; position:absolute; top:0; left:50%; transform:translateX(-50%); width:120px; height:2px; background:linear-gradient(90deg,transparent,var(--accent),transparent); }
-    .header-logo  { font-size:36px; line-height:1; margin-bottom:6px; }
-    .header-title { font-size:18px; font-weight:700; letter-spacing:1px; }
-    .header-sub   { font-size:11px; color:var(--muted); margin-top:2px; letter-spacing:2px; text-transform:uppercase; }
-    #clock      { font-family:var(--mono); font-size:32px; font-weight:600; color:var(--accent); letter-spacing:3px; margin:12px 0 2px; text-shadow:0 0 20px rgba(0,212,255,0.4); }
-    #date-label { font-size:12px; color:var(--muted); }
-
-    .wrap { padding: 0 16px; }
-    .card { background:var(--s1); border:1px solid var(--border); border-radius:16px; padding:16px; margin-top:12px; position:relative; overflow:hidden; }
-    .card::before { content:''; position:absolute; top:0; left:16px; right:16px; height:1px; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.06),transparent); }
-    .card-label { font-size:11px; font-weight:700; color:var(--muted); letter-spacing:2px; text-transform:uppercase; margin-bottom:12px; }
-
-    .emp-input { width:100%; background:var(--s2); border:1px solid var(--border); border-radius:10px; padding:13px 16px; font-size:20px; font-family:var(--mono); color:var(--text); outline:none; transition:border-color 0.2s,box-shadow 0.2s; -webkit-appearance:none; }
-    .emp-input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(0,212,255,0.08); }
-    .emp-input::placeholder { color:var(--muted); font-size:14px; font-family:var(--font); }
-
-    .emp-result { display:none; margin-top:10px; padding:11px 14px; background:var(--s2); border-radius:10px; border-left:3px solid var(--green); align-items:center; gap:10px; }
-    .emp-result.show { display:flex; }
-    .emp-result.err  { border-left-color:var(--red); }
-    .emp-result .ava { font-size:20px; flex-shrink:0; }
-    .emp-result .info .name { font-weight:700; font-size:15px; }
-    .emp-result .info .sub  { font-size:12px; color:var(--muted); font-family:var(--mono); margin-top:2px; }
-
-    #map { height:190px; border-radius:10px; border:1px solid var(--border); overflow:hidden; }
-    .gps-row { display:flex; align-items:flex-start; gap:8px; margin-top:10px; font-size:13px; color:var(--muted); line-height:1.5; }
-    .dot { width:8px; height:8px; border-radius:50%; background:var(--yellow); flex-shrink:0; margin-top:4px; }
-    .dot.ok  { background:var(--green); }
-    .dot.err { background:var(--red); }
-    .dot.pulse { animation:blink 1.2s infinite; }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
-
-    .cam-box { position:relative; border-radius:10px; overflow:hidden; background:#000; aspect-ratio:4/3; }
-    #video { width:100%; height:100%; object-fit:cover; display:block; transform:scaleX(-1); }
-    #photo-preview { width:100%; height:100%; object-fit:cover; display:none; }
-    .cam-msg { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(0,0,0,0.75); color:var(--muted); font-size:14px; text-align:center; padding:20px; gap:8px; }
-    .cam-msg .icon { font-size:36px; }
-    .cam-msg.hidden { display:none; }
-
-    .shutter-row { display:flex; align-items:center; justify-content:center; gap:28px; margin-top:14px; }
-    .shutter { width:68px; height:68px; border-radius:50%; background:white; border:4px solid #444; font-size:26px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:transform 0.1s; flex-shrink:0; }
-    .shutter:active { transform:scale(0.9); }
-    .shutter:disabled { opacity:0.3; }
-    .icon-btn { width:44px; height:44px; border-radius:50%; background:var(--s2); border:1px solid var(--border); color:var(--text); font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
-
-    /* ── retake row ── */
-    .retake-row { display:none; margin-top:10px; }
-    .retake-row.show { display:block; }
-    .btn-retake { width:100%; padding:12px; border:1px solid var(--border); border-radius:10px; background:var(--s2); color:var(--muted); font-size:14px; font-family:var(--font); font-weight:700; cursor:pointer; }
-
-    .submit-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px; }
-    .sub-btn { padding:18px 10px; border:none; border-radius:14px; font-size:17px; font-family:var(--font); font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:transform 0.1s,opacity 0.15s; position:relative; overflow:hidden; }
-    .sub-btn::after { content:''; position:absolute; inset:0; background:linear-gradient(180deg,rgba(255,255,255,0.08) 0%,transparent 100%); pointer-events:none; }
-    .sub-btn:active { transform:scale(0.96); }
-    .sub-btn:disabled { opacity:0.25; cursor:not-allowed; transform:none; }
-    .btn-in  { background:var(--green); color:#000; box-shadow:0 4px 20px rgba(0,230,118,0.25); }
-    .btn-out { background:var(--red);   color:#fff; box-shadow:0 4px 20px rgba(255,77,77,0.25); }
-
-    #toast { display:none; margin:12px 0 0; padding:14px 16px; border-radius:12px; border:1px solid; text-align:center; }
-    #toast.show    { display:block; animation:fadeIn 0.25s; }
-    #toast.success { background:rgba(0,230,118,0.08); border-color:var(--green); }
-    #toast.error   { background:rgba(255,77,77,0.08);  border-color:var(--red); }
-    #toast.loading { background:rgba(0,212,255,0.08);  border-color:var(--accent); }
-    .toast-icon { font-size:26px; margin-bottom:4px; }
-    .toast-text { font-size:15px; font-weight:600; }
-    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
-
-    .config-notice { margin-top:12px; padding:12px 14px; border-radius:10px; background:rgba(255,193,7,0.07); border:1px solid rgba(255,193,7,0.2); font-size:13px; color:var(--yellow); display:none; }
-    .config-notice.show { display:block; }
-
-    /* photo ok badge */
-    .photo-ok { display:none; margin-top:8px; padding:8px 12px; border-radius:8px; background:rgba(0,230,118,0.1); border:1px solid var(--green); color:var(--green); font-size:13px; font-weight:600; text-align:center; }
-    .photo-ok.show { display:block; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>ระบบลงเวลา</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root{--bg:#080c10;--s1:#0e1419;--s2:#161d25;--bd:#1e2a35;--ac:#00d4ff;--gr:#00e676;--rd:#ff4d4d;--yw:#ffc107;--tx:#e8f0fe;--mu:#5c7080}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;padding-bottom:48px}
+.hdr{background:linear-gradient(180deg,#0a1628,var(--bg));border-bottom:1px solid var(--bd);padding:20px 20px 14px;text-align:center}
+.hdr-icon{font-size:34px;margin-bottom:4px}
+.hdr-title{font-size:17px;font-weight:700;letter-spacing:1px}
+.hdr-sub{font-size:10px;color:var(--mu);letter-spacing:2px;text-transform:uppercase}
+#clock{font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:600;color:var(--ac);letter-spacing:3px;margin:10px 0 2px;text-shadow:0 0 16px rgba(0,212,255,.4)}
+#date-lbl{font-size:12px;color:var(--mu);margin-bottom:4px}
+.wrap{padding:0 14px}
+.card{background:var(--s1);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-top:12px}
+.lbl{font-size:10px;font-weight:700;color:var(--mu);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px}
+.emp-in{width:100%;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px 14px;font-size:20px;font-family:'IBM Plex Mono',monospace;color:var(--tx);outline:none;-webkit-appearance:none;transition:border-color .2s}
+.emp-in:focus{border-color:var(--ac)}
+.emp-in::placeholder{color:var(--mu);font-size:14px;font-family:'Sarabun',sans-serif}
+.emp-badge{display:none;margin-top:10px;padding:10px 12px;background:var(--s2);border-radius:10px;border-left:3px solid var(--gr);align-items:center;gap:10px}
+.emp-badge.show{display:flex}.emp-badge.err{border-left-color:var(--rd)}
+.emp-badge .ico{font-size:20px;flex-shrink:0}
+.emp-badge .nm{font-weight:700;font-size:14px}
+.emp-badge .sid{font-size:11px;color:var(--mu);font-family:'IBM Plex Mono',monospace}
+#map{height:180px;border-radius:10px;border:1px solid var(--bd);overflow:hidden}
+.gps-row{display:flex;align-items:flex-start;gap:8px;margin-top:8px;font-size:12px;color:var(--mu);line-height:1.5}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--yw);flex-shrink:0;margin-top:3px}
+.dot.ok{background:var(--gr)}.dot.err{background:var(--rd)}.dot.pulse{animation:blink 1.2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.cam-box{position:relative;border-radius:10px;overflow:hidden;background:#000;aspect-ratio:4/3}
+#video{width:100%;height:100%;object-fit:cover;display:block;transform:scaleX(-1)}
+#preview{width:100%;height:100%;object-fit:cover;display:none}
+.cam-msg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.75);color:var(--mu);font-size:13px;text-align:center;padding:16px;gap:6px}
+.cam-msg .mi{font-size:34px}.cam-msg.hidden{display:none}
+.sh-row{display:flex;align-items:center;justify-content:center;gap:24px;margin-top:12px}
+.shutter{width:64px;height:64px;border-radius:50%;background:#fff;border:4px solid #444;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .1s;flex-shrink:0}
+.shutter:active{transform:scale(.9)}.shutter:disabled{opacity:.3}
+.flip-btn{width:42px;height:42px;border-radius:50%;background:var(--s2);border:1px solid var(--bd);color:var(--tx);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.photo-ok{display:none;margin-top:8px;padding:8px 12px;border-radius:8px;background:rgba(0,230,118,.1);border:1px solid var(--gr);color:var(--gr);font-size:12px;font-weight:600;text-align:center}
+.photo-ok.show{display:block}
+.retake-btn{display:none;width:100%;margin-top:8px;padding:11px;border:1px solid var(--bd);border-radius:10px;background:var(--s2);color:var(--mu);font-size:13px;font-family:'Sarabun',sans-serif;font-weight:700;cursor:pointer}
+.retake-btn.show{display:block}
+.sub-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.sub-btn{padding:16px 8px;border:none;border-radius:12px;font-size:16px;font-family:'Sarabun',sans-serif;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:transform .1s,opacity .15s}
+.sub-btn:active{transform:scale(.96)}.sub-btn:disabled{opacity:.25;cursor:not-allowed;transform:none}
+.btn-in{background:var(--gr);color:#000;box-shadow:0 4px 18px rgba(0,230,118,.25)}
+.btn-out{background:var(--rd);color:#fff;box-shadow:0 4px 18px rgba(255,77,77,.25)}
+#toast{display:none;margin:12px 0 0;padding:14px 16px;border-radius:12px;border:1px solid;text-align:center}
+#toast.show{display:block;animation:fi .25s}
+#toast.success{background:rgba(0,230,118,.08);border-color:var(--gr)}
+#toast.error{background:rgba(255,77,77,.08);border-color:var(--rd)}
+#toast.loading{background:rgba(0,212,255,.08);border-color:var(--ac)}
+.t-icon{font-size:24px;margin-bottom:4px}.t-text{font-size:14px;font-weight:600}
+@keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+</style>
 </head>
 <body>
-
-<div class="header">
-  <div class="header-logo">🏢</div>
-  <div class="header-title">ระบบลงเวลา</div>
-  <div class="header-sub">Attendance System</div>
+<div class="hdr">
+  <div class="hdr-icon">🏢</div>
+  <div class="hdr-title">ระบบลงเวลา</div>
+  <div class="hdr-sub">Attendance System</div>
   <div id="clock">--:--:--</div>
-  <div id="date-label">--</div>
+  <div id="date-lbl">--</div>
 </div>
-
 <div class="wrap">
-  <div class="config-notice" id="config-notice">⚠️ กรุณาใส่ GAS_API_URL ในไฟล์ก่อน deploy</div>
-  <div id="toast"><div class="toast-icon" id="toast-icon"></div><div class="toast-text" id="toast-text"></div></div>
-
-  <!-- Employee -->
+  <div id="toast"><div class="t-icon" id="t-icon"></div><div class="t-text" id="t-text"></div></div>
   <div class="card">
-    <div class="card-label">👤 รหัสพนักงาน</div>
-    <input class="emp-input" id="emp-id" type="text" placeholder="กรอกรหัสพนักงาน"
-      inputmode="numeric" autocomplete="off" spellcheck="false" oninput="onEmpInput()">
-    <div class="emp-result" id="emp-result">
-      <div class="ava" id="emp-ava">👤</div>
-      <div class="info">
-        <div class="name" id="emp-name"></div>
-        <div class="sub"  id="emp-sub"></div>
-      </div>
+    <div class="lbl">👤 รหัสพนักงาน</div>
+    <input class="emp-in" id="emp-id" type="text" placeholder="กรอกรหัสพนักงาน"
+      inputmode="numeric" autocomplete="off" spellcheck="false" oninput="onEmp()">
+    <div class="emp-badge" id="emp-badge">
+      <div class="ico" id="emp-ico">👤</div>
+      <div><div class="nm" id="emp-nm"></div><div class="sid" id="emp-sid"></div></div>
     </div>
   </div>
-
-  <!-- GPS -->
   <div class="card">
-    <div class="card-label">📍 ตำแหน่ง GPS</div>
+    <div class="lbl">📍 ตำแหน่ง GPS</div>
     <div id="map"></div>
-    <div class="gps-row">
-      <div class="dot pulse" id="gps-dot"></div>
-      <span id="gps-text">กำลังหาตำแหน่ง...</span>
-    </div>
+    <div class="gps-row"><div class="dot pulse" id="gps-dot"></div><span id="gps-txt">กำลังหาตำแหน่ง...</span></div>
   </div>
-
-  <!-- Camera -->
   <div class="card">
-    <div class="card-label">📷 ถ่ายภาพยืนยัน</div>
+    <div class="lbl">📷 ถ่ายภาพยืนยัน</div>
     <div class="cam-box">
       <video id="video" autoplay playsinline muted></video>
-      <img id="photo-preview" alt="preview">
-      <div class="cam-msg" id="cam-msg">
-        <div class="icon">⏳</div>
-        <span>กำลังเปิดกล้อง...</span>
-      </div>
+      <img id="preview" alt="">
+      <div class="cam-msg" id="cam-msg"><div class="mi">⏳</div><span>กำลังเปิดกล้อง...</span></div>
     </div>
-    <div class="shutter-row" id="shutter-row">
-      <button class="icon-btn" onclick="flipCam()">🔄</button>
+    <div class="sh-row" id="sh-row">
+      <button class="flip-btn" onclick="flipCam()">🔄</button>
       <button class="shutter" id="shutter" onclick="snap()" disabled>📸</button>
-      <div style="width:44px"></div>
+      <div style="width:42px"></div>
     </div>
     <div class="photo-ok" id="photo-ok">✅ บันทึกภาพแล้ว — กดเข้า/ออกงานได้เลย</div>
-    <div class="retake-row" id="retake-row">
-      <button class="btn-retake" onclick="retake()">🔄 ถ่ายใหม่</button>
-    </div>
+    <button class="retake-btn" id="retake-btn" onclick="retake()">🔄 ถ่ายใหม่</button>
   </div>
-
-  <!-- Submit -->
-  <div class="submit-row">
-    <button class="sub-btn btn-in"  id="btn-in"  onclick="submitAttend('IN')"  disabled>🟢 เข้างาน</button>
-    <button class="sub-btn btn-out" id="btn-out" onclick="submitAttend('OUT')" disabled>🔴 ออกงาน</button>
+  <div class="sub-row">
+    <button class="sub-btn btn-in"  id="btn-in"  onclick="go('IN')"  disabled>🟢 เข้างาน</button>
+    <button class="sub-btn btn-out" id="btn-out" onclick="go('OUT')" disabled>🔴 ออกงาน</button>
   </div>
 </div>
-
 <canvas id="canvas" style="display:none"></canvas>
-
 <script>
-// ════════════════════════════════════════════
-// ⭐ ใส่ URL จาก GAS Deploy ตรงนี้
-const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzchh2GAN72N9KkUYdzsyKS9BJtUKdFCw2HGidBZoLjGJ3UD7IsmloxlJFpynd7rwMONA/exec";
-// ════════════════════════════════════════════
-const OFFICE_LAT   = 14.57736759075333;
-const OFFICE_LNG   = 100.79379214129247;
-const ALLOW_RADIUS = 100;
+// ════════════════════════════════════
+// ⭐ ใส่ GAS URL ตรงนี้
+const API = "https://script.google.com/macros/s/AKfycbzkU42P_jAYtWLDYuZS9gQcFcpn8w975Q4hH0SAUsLZyMM_GPYkTz7MgDHL9upba5m8Kg/exec";
+// ════════════════════════════════════
+const O_LAT=14.57736759075333, O_LNG=100.79379214129247, RADIUS=100;
+let emp=null, gps=null, photo=null, facing='user', stream=null, empT=null, mapObj, pin;
 
-let empData  = null;
-let gpsData  = null;
-let photoB64 = null;
-let facingMode = 'user';
-let stream     = null;
-let empTimer   = null;
-let mapObj, userMarker;
-
-document.addEventListener('DOMContentLoaded', () => {
-  if (GAS_API_URL === 'YOUR_GAS_WEB_APP_URL_HERE') {
-    document.getElementById('config-notice').classList.add('show');
-  }
-  initClock();
-  initMap();
-  initGPS();
-  initCamera();
+document.addEventListener('DOMContentLoaded',()=>{
+  clk(); setInterval(clk,1000);
+  initMap(); initGPS(); initCam();
 });
 
-// ── Clock ──────────────────────────────────
-function initClock() {
-  const tick = () => {
-    const n = new Date();
-    document.getElementById('clock').textContent = n.toLocaleTimeString('th-TH',{hour12:false});
-    document.getElementById('date-label').textContent = n.toLocaleDateString('th-TH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  };
-  tick(); setInterval(tick, 1000);
+function clk(){
+  const n=new Date();
+  document.getElementById('clock').textContent=n.toLocaleTimeString('th-TH',{hour12:false});
+  document.getElementById('date-lbl').textContent=n.toLocaleDateString('th-TH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 }
 
-// ── Map ────────────────────────────────────
-function initMap() {
-  mapObj = L.map('map',{zoomControl:false,attributionControl:false}).setView([OFFICE_LAT,OFFICE_LNG],17);
+function initMap(){
+  mapObj=L.map('map',{zoomControl:false,attributionControl:false}).setView([O_LAT,O_LNG],17);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapObj);
-  L.circle([OFFICE_LAT,OFFICE_LNG],{radius:ALLOW_RADIUS,color:'#ff4d4d',fillColor:'#ff4d4d',fillOpacity:0.1,weight:2}).addTo(mapObj);
-  L.marker([OFFICE_LAT,OFFICE_LNG],{icon:L.divIcon({html:'🏢',className:'',iconSize:[24,24],iconAnchor:[12,12]})}).addTo(mapObj);
+  L.circle([O_LAT,O_LNG],{radius:RADIUS,color:'#ff4d4d',fillColor:'#ff4d4d',fillOpacity:.1,weight:2}).addTo(mapObj);
+  L.marker([O_LAT,O_LNG],{icon:L.divIcon({html:'🏢',className:'',iconSize:[24,24],iconAnchor:[12,12]})}).addTo(mapObj);
 }
-
-function setUserPin(lat,lng) {
-  if (userMarker) mapObj.removeLayer(userMarker);
-  userMarker = L.marker([lat,lng],{icon:L.divIcon({html:'📍',className:'',iconSize:[24,24],iconAnchor:[12,24]})}).addTo(mapObj);
+function setPin(lat,lng){
+  if(pin) mapObj.removeLayer(pin);
+  pin=L.marker([lat,lng],{icon:L.divIcon({html:'📍',className:'',iconSize:[24,24],iconAnchor:[12,24]})}).addTo(mapObj);
   mapObj.setView([lat,lng],17);
 }
 
-// ── GPS ────────────────────────────────────
-function initGPS() {
-  if (!navigator.geolocation) { setGPS('err','❌ Browser ไม่รองรับ GPS'); return; }
+function initGPS(){
+  if(!navigator.geolocation){setGPS('err','❌ Browser ไม่รองรับ GPS');return;}
   setGPS('pulse','กำลังหาตำแหน่ง...');
-  navigator.geolocation.watchPosition(
-    pos => {
-      const {latitude:lat,longitude:lng,accuracy,speed} = pos.coords;
-      gpsData = {lat,lng,accuracy,speed:speed||0};
-      setUserPin(lat,lng);
-      const dist = haversine(lat,lng,OFFICE_LAT,OFFICE_LNG);
-      const inZone = dist <= ALLOW_RADIUS;
-      setGPS(inZone?'ok':'err', (inZone?'✅ อยู่ในพื้นที่':'❌ นอกพื้นที่')+' · ±'+Math.round(accuracy)+'m · '+Math.round(dist)+'m จากบริษัท');
-      checkReady();
-    },
-    err => {
-      const m = {1:'❌ กรุณาอนุญาต GPS',2:'❌ หาตำแหน่งไม่ได้',3:'❌ GPS หมดเวลา'};
-      setGPS('err', m[err.code]||'❌ GPS error');
-    },
-    {enableHighAccuracy:true,timeout:15000,maximumAge:5000}
-  );
+  navigator.geolocation.watchPosition(pos=>{
+    const{latitude:lat,longitude:lng,accuracy,speed}=pos.coords;
+    gps={lat,lng,accuracy,speed:speed||0};
+    setPin(lat,lng);
+    const d=dist(lat,lng,O_LAT,O_LNG),ok=d<=RADIUS;
+    setGPS(ok?'ok':'err',(ok?'✅ อยู่ในพื้นที่':'❌ นอกพื้นที่')+' · ±'+Math.round(accuracy)+'m · '+Math.round(d)+'m จากบริษัท');
+    chk();
+  },err=>{
+    const m={1:'❌ กรุณาอนุญาต GPS',2:'❌ หาตำแหน่งไม่ได้',3:'❌ GPS หมดเวลา'};
+    setGPS('err',m[err.code]||'❌ GPS error');
+  },{enableHighAccuracy:true,timeout:15000,maximumAge:5000});
+}
+function setGPS(s,t){
+  document.getElementById('gps-dot').className='dot'+(s==='pulse'?' pulse':s==='ok'?' ok':' err');
+  document.getElementById('gps-txt').textContent=t;
 }
 
-function setGPS(state,text) {
-  const dot = document.getElementById('gps-dot');
-  dot.className = 'dot'+(state==='pulse'?' pulse':state==='ok'?' ok':' err');
-  document.getElementById('gps-text').textContent = text;
-}
-
-// ── Camera ─────────────────────────────────
-async function initCamera() {
-  await startCam('user');
-}
-
-async function startCam(facing) {
-  if (stream) stream.getTracks().forEach(t => t.stop());
-  const msg = document.getElementById('cam-msg');
-  msg.classList.remove('hidden');
-  msg.innerHTML = '<div class="icon">⏳</div><span>กำลังเปิดกล้อง...</span>';
-  document.getElementById('shutter').disabled = true;
-  try {
-    stream = await navigator.mediaDevices.getUserMedia({
-      video:{facingMode:{ideal:facing},width:{ideal:1280},height:{ideal:960}},audio:false
-    });
-    const video = document.getElementById('video');
-    video.srcObject = stream;
-    await video.play();
-    video.style.transform = facing==='user'?'scaleX(-1)':'scaleX(1)';
+async function initCam(){await startCam('user');}
+async function startCam(f){
+  if(stream) stream.getTracks().forEach(t=>t.stop());
+  const msg=document.getElementById('cam-msg');
+  msg.className='cam-msg'; msg.innerHTML='<div class="mi">⏳</div><span>กำลังเปิดกล้อง...</span>';
+  document.getElementById('shutter').disabled=true;
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:f},width:{ideal:640},height:{ideal:480}},audio:false});
+    const v=document.getElementById('video');
+    v.srcObject=stream; await v.play();
+    v.style.transform=f==='user'?'scaleX(-1)':'scaleX(1)';
     msg.classList.add('hidden');
-    document.getElementById('shutter').disabled = false;
-  } catch(e) {
-    let txt = '❌ เปิดกล้องไม่ได้';
-    if (e.name==='NotAllowedError')  txt = '❌ ถูกปฏิเสธสิทธิ์กล้อง<br>กดที่ไอคอนกล้องใน address bar แล้วกด Allow';
-    if (e.name==='NotFoundError')    txt = '❌ ไม่พบกล้อง';
-    if (e.name==='NotReadableError') txt = '❌ กล้องถูกใช้อยู่ ปิดแอปอื่นก่อน';
-    msg.innerHTML = '<div class="icon">📷</div><span>'+txt+'</span>';
+    document.getElementById('shutter').disabled=false;
+  }catch(e){
+    let t='❌ เปิดกล้องไม่ได้';
+    if(e.name==='NotAllowedError') t='❌ กรุณาอนุญาตกล้อง<br>กดไอคอนกล้องใน address bar แล้ว Allow';
+    if(e.name==='NotFoundError')   t='❌ ไม่พบกล้อง';
+    if(e.name==='NotReadableError')t='❌ กล้องถูกใช้อยู่ ปิดแอปอื่นก่อน';
+    msg.innerHTML='<div class="mi">📷</div><span>'+t+'</span>';
   }
 }
+function flipCam(){facing=facing==='user'?'environment':'user';retake();startCam(facing);}
 
-function flipCam() {
-  facingMode = facingMode==='user'?'environment':'user';
-  retake();
-  startCam(facingMode);
-}
-
-function snap() {
-  const video  = document.getElementById('video');
-  const canvas = document.getElementById('canvas');
-  canvas.width  = video.videoWidth  || 640;
-  canvas.height = video.videoHeight || 480;
-  const ctx = canvas.getContext('2d');
-  if (facingMode==='user') { ctx.translate(canvas.width,0); ctx.scale(-1,1); }
-  ctx.drawImage(video,0,0);
-
-  // ลด resolution ก่อน encode
-  const MAX = 640;
-  const ratio = Math.min(MAX / canvas.width, MAX / canvas.height, 1);
-  const offscreen = document.createElement('canvas');
-  offscreen.width  = Math.round(canvas.width  * ratio);
-  offscreen.height = Math.round(canvas.height * ratio);
-  offscreen.getContext('2d').drawImage(canvas, 0, 0, offscreen.width, offscreen.height);
-  const b64 = offscreen.toDataURL('image/jpeg', 0.6).split(',')[1];
-
-  // set photoB64 ทันที ไม่ต้องกด confirm
-  photoB64 = b64;
-
-  // แสดง preview
-  const prev = document.getElementById('photo-preview');
-  prev.src = 'data:image/jpeg;base64,'+b64;
-  prev.style.display = 'block';
-  document.getElementById('video').style.display = 'none';
-  document.getElementById('shutter-row').style.display = 'none';
+function snap(){
+  const v=document.getElementById('video'),c=document.getElementById('canvas');
+  // ถ่ายที่ 480x360 เพื่อลดขนาดไฟล์
+  c.width=480; c.height=360;
+  const ctx=c.getContext('2d');
+  if(facing==='user'){ctx.translate(480,0);ctx.scale(-1,1);}
+  ctx.drawImage(v,0,0,480,360);
+  photo=c.toDataURL('image/jpeg',0.7).split(',')[1];
+  const p=document.getElementById('preview');
+  p.src='data:image/jpeg;base64,'+photo; p.style.display='block';
+  document.getElementById('video').style.display='none';
+  document.getElementById('sh-row').style.display='none';
   document.getElementById('cam-msg').classList.add('hidden');
   document.getElementById('photo-ok').classList.add('show');
-  document.getElementById('retake-row').classList.add('show');
-  checkReady();
+  document.getElementById('retake-btn').classList.add('show');
+  chk();
 }
-
-function retake() {
-  photoB64 = null;
-  document.getElementById('photo-preview').style.display = 'none';
-  document.getElementById('photo-preview').src = '';
-  document.getElementById('video').style.display = 'block';
-  document.getElementById('shutter-row').style.display = '';
+function retake(){
+  photo=null;
+  document.getElementById('preview').style.display='none';
+  document.getElementById('preview').src='';
+  document.getElementById('video').style.display='block';
+  document.getElementById('sh-row').style.display='';
   document.getElementById('photo-ok').classList.remove('show');
-  document.getElementById('retake-row').classList.remove('show');
-  checkReady();
+  document.getElementById('retake-btn').classList.remove('show');
+  chk();
 }
 
-// ── Employee ───────────────────────────────
-function onEmpInput() {
-  empData = null;
-  document.getElementById('emp-result').className = 'emp-result';
-  clearTimeout(empTimer);
-  checkReady();
-  const val = document.getElementById('emp-id').value.trim();
-  if (!val) return;
-  empTimer = setTimeout(async () => {
-    try {
-      const res = await gasCall('getEmployee',{employee_id:val});
-      const el = document.getElementById('emp-result');
-      if (res.result==='success') {
-        empData = {id:val,name:res.name};
-        el.className = 'emp-result show';
-        document.getElementById('emp-ava').textContent  = '✅';
-        document.getElementById('emp-name').textContent = res.name;
-        document.getElementById('emp-sub').textContent  = 'รหัส: '+val;
-      } else {
-        el.className = 'emp-result show err';
-        document.getElementById('emp-ava').textContent  = '❌';
-        document.getElementById('emp-name').textContent = res.message;
-        document.getElementById('emp-sub').textContent  = '';
+function onEmp(){
+  emp=null; document.getElementById('emp-badge').className='emp-badge';
+  clearTimeout(empT); chk();
+  const v=document.getElementById('emp-id').value.trim();
+  if(!v) return;
+  empT=setTimeout(async()=>{
+    try{
+      const r=await call('getEmployee',{employee_id:v});
+      const b=document.getElementById('emp-badge');
+      if(r.result==='success'){
+        emp={id:v,name:r.name}; b.className='emp-badge show';
+        document.getElementById('emp-ico').textContent='✅';
+        document.getElementById('emp-nm').textContent=r.name;
+        document.getElementById('emp-sid').textContent='รหัส: '+v;
+      }else{
+        b.className='emp-badge show err';
+        document.getElementById('emp-ico').textContent='❌';
+        document.getElementById('emp-nm').textContent=r.message;
+        document.getElementById('emp-sid').textContent='';
       }
-    } catch { showToast('error','❌','เชื่อมต่อ server ไม่ได้'); }
-    checkReady();
-  }, 600);
+    }catch{toast('error','❌','เชื่อมต่อ server ไม่ได้');}
+    chk();
+  },600);
 }
 
-// ── Ready check ────────────────────────────
-function checkReady() {
-  const ok = !!empData && !!gpsData && !!photoB64;
-  document.getElementById('btn-in').disabled  = !ok;
-  document.getElementById('btn-out').disabled = !ok;
+function chk(){
+  const ok=!!emp&&!!gps&&!!photo;
+  document.getElementById('btn-in').disabled=!ok;
+  document.getElementById('btn-out').disabled=!ok;
 }
 
-// ── Submit ─────────────────────────────────
-async function submitAttend(type) {
-  if (!empData || !gpsData || !photoB64) return;
-  showToast('loading','⏳', type==='IN'?'กำลังลงเวลาเข้างาน...':'กำลังลงเวลาออกงาน...');
+async function go(type){
+  if(!emp||!gps||!photo) return;
+  toast('loading','⏳',type==='IN'?'กำลังลงเวลาเข้างาน...':'กำลังลงเวลาออกงาน...');
   setBtns(true);
-  try {
-    const res = await gasCall('saveAttendance',{
-      employee_id:empData.id, name:empData.name, status:type,
-      latitude:gpsData.lat, longitude:gpsData.lng,
-      accuracy:gpsData.accuracy, speed:gpsData.speed, image:photoB64
+  try{
+    const r=await call('saveAttendance',{
+      employee_id:emp.id, name:emp.name, status:type,
+      latitude:gps.lat, longitude:gps.lng,
+      accuracy:gps.accuracy, speed:gps.speed,
+      image:photo
     });
-    showToast(res.result==='success'?'success':'error', res.result==='success'?'✅':'❌', res.message);
-    if (res.result!=='success') setBtns(false);
-  } catch {
-    showToast('error','❌','เชื่อมต่อ server ไม่ได้');
-    setBtns(false);
-  }
+    toast(r.result==='success'?'success':'error',r.result==='success'?'✅':'❌',r.message);
+    if(r.result!=='success') setBtns(false);
+  }catch{toast('error','❌','เชื่อมต่อ server ไม่ได้');setBtns(false);}
+}
+function setBtns(d){document.getElementById('btn-in').disabled=d;document.getElementById('btn-out').disabled=d;}
+
+async function call(action,payload){
+  const r=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,...payload})});
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return r.json();
 }
 
-function setBtns(disabled) {
-  document.getElementById('btn-in').disabled  = disabled;
-  document.getElementById('btn-out').disabled = disabled;
-}
-
-// ── GAS API ────────────────────────────────
-async function gasCall(action,payload) {
-  const res = await fetch(GAS_API_URL,{
-    method:'POST',
-    headers:{'Content-Type':'text/plain;charset=utf-8'},
-    body:JSON.stringify({action,...payload})
-  });
-  if (!res.ok) throw new Error('HTTP '+res.status);
-  return res.json();
-}
-
-// ── Toast ──────────────────────────────────
-function showToast(type,icon,text) {
-  const t = document.getElementById('toast');
-  if (!type) { t.className=''; return; }
-  t.className = 'show '+type;
-  document.getElementById('toast-icon').textContent = icon;
-  document.getElementById('toast-text').textContent = text;
+function toast(type,icon,text){
+  const t=document.getElementById('toast');
+  if(!type){t.className='';return;}
+  t.className='show '+type;
+  document.getElementById('t-icon').textContent=icon;
+  document.getElementById('t-text').textContent=text;
   t.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
-// ── Util ───────────────────────────────────
-function haversine(lat1,lng1,lat2,lng2) {
-  const R=6371e3, p1=lat1*Math.PI/180, p2=lat2*Math.PI/180;
-  const a=Math.sin((lat2-lat1)*Math.PI/360)**2+Math.cos(p1)*Math.cos(p2)*Math.sin((lng2-lng1)*Math.PI/360)**2;
-  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+function dist(a,b,c,d){
+  const R=6371e3,p1=a*Math.PI/180,p2=c*Math.PI/180;
+  const x=Math.sin((c-a)*Math.PI/360)**2+Math.cos(p1)*Math.cos(p2)*Math.sin((d-b)*Math.PI/360)**2;
+  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
 </script>
 </body>
