@@ -295,7 +295,15 @@ function snap() {
   const ctx = canvas.getContext('2d');
   if (facingMode==='user') { ctx.translate(canvas.width,0); ctx.scale(-1,1); }
   ctx.drawImage(video,0,0);
-  const b64 = canvas.toDataURL('image/jpeg',0.85).split(',')[1];
+
+  // ลด resolution ก่อน encode
+  const MAX = 640;
+  const ratio = Math.min(MAX / canvas.width, MAX / canvas.height, 1);
+  const offscreen = document.createElement('canvas');
+  offscreen.width  = Math.round(canvas.width  * ratio);
+  offscreen.height = Math.round(canvas.height * ratio);
+  offscreen.getContext('2d').drawImage(canvas, 0, 0, offscreen.width, offscreen.height);
+  const b64 = offscreen.toDataURL('image/jpeg', 0.6).split(',')[1];
 
   // set photoB64 ทันที ไม่ต้องกด confirm
   photoB64 = b64;
@@ -309,7 +317,6 @@ function snap() {
   document.getElementById('cam-msg').classList.add('hidden');
   document.getElementById('photo-ok').classList.add('show');
   document.getElementById('retake-row').classList.add('show');
-
   checkReady();
 }
 
