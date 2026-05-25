@@ -8,200 +8,208 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
+
 :root{
-  --bg:#080c10;--s1:#0e1419;--s2:#161d25;--bd:#1e2a35;
-  --ac:#00d4ff;--gr:#00e676;--rd:#ff4d4d;--yw:#ffc107;
-  --tx:#e8f0fe;--mu:#5c7080;
-  --sidebar-w:240px;
+  --bg:#f0f5fb;
+  --s1:#ffffff;
+  --s2:#e8f0fb;
+  --bd:#c5d6ee;
+  --ac:#1a5fa8;
+  --ac2:#2176d2;
+  --gr:#1a7a4a;
+  --rd:#c0392b;
+  --yw:#d4860a;
+  --tx:#1a2a3a;
+  --mu:#6b85a0;
+  --hdr:#1a3d6b;
+  --sidebar-w:250px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;display:flex;flex-direction:column;}
+body{
+  font-family:'Angsana New','Angsana','Sarabun',serif;
+  background:var(--bg);color:var(--tx);
+  min-height:100vh;display:flex;flex-direction:column;
+  font-size:16px;
+}
 
 /* ─── OVERLAY ─── */
-#overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(2px);z-index:90;opacity:0;pointer-events:none;transition:opacity .3s}
+#overlay{position:fixed;inset:0;background:rgba(10,30,60,.45);backdrop-filter:blur(2px);z-index:90;opacity:0;pointer-events:none;transition:opacity .3s}
 #overlay.open{opacity:1;pointer-events:all}
 
 /* ─── SIDEBAR ─── */
 #sidebar{
   position:fixed;top:0;left:0;height:100%;width:var(--sidebar-w);
-  background:var(--s1);border-right:1px solid var(--bd);
+  background:var(--s1);border-right:2px solid var(--bd);
   z-index:100;transform:translateX(-100%);
   transition:transform .32s cubic-bezier(.4,0,.2,1);
   display:flex;flex-direction:column;
+  box-shadow:4px 0 24px rgba(26,63,107,.12);
 }
 #sidebar.open{transform:translateX(0)}
 .sb-head{
   padding:28px 20px 18px;
-  border-bottom:1px solid var(--bd);
-  background:linear-gradient(180deg,#0a1628,var(--s1));
+  border-bottom:2px solid var(--bd);
+  background:linear-gradient(160deg,var(--hdr),var(--ac2));
+  color:#fff;
 }
-.sb-logo{font-size:28px;margin-bottom:6px}
-.sb-title{font-size:14px;font-weight:700;letter-spacing:.5px}
-.sb-sub{font-size:10px;color:var(--mu);letter-spacing:2px;text-transform:uppercase;margin-top:2px}
-.sb-nav{padding:14px 10px;flex:1}
-.sb-nav-lbl{font-size:9px;font-weight:700;color:var(--mu);letter-spacing:2px;text-transform:uppercase;padding:6px 10px 8px}
+.sb-logo{font-size:32px;margin-bottom:4px}
+.sb-title{font-size:18px;font-weight:700;letter-spacing:.5px;font-family:'Angsana New','Angsana','Sarabun',serif}
+.sb-sub{font-size:11px;opacity:.75;letter-spacing:1.5px;text-transform:uppercase;margin-top:2px;font-family:'Sarabun',sans-serif}
+.sb-nav{padding:16px 10px;flex:1}
+.sb-nav-lbl{font-size:11px;font-weight:700;color:var(--mu);letter-spacing:2px;text-transform:uppercase;padding:6px 10px 8px;font-family:'Sarabun',sans-serif}
 .nav-item{
   display:flex;align-items:center;gap:12px;
-  padding:12px 14px;border-radius:10px;
-  font-size:14px;font-weight:600;cursor:pointer;
+  padding:13px 16px;border-radius:8px;
+  font-size:17px;font-weight:600;cursor:pointer;
+  color:var(--tx);text-decoration:none;
   transition:background .15s,color .15s;
-  margin-bottom:4px;
+  margin-bottom:4px;border:1px solid transparent;
 }
-.nav-item:hover{background:var(--s2)}
-.nav-item.active{background:rgba(0,212,255,.12);color:var(--ac);border:1px solid rgba(0,212,255,.2)}
-.nav-item .ni{font-size:18px;flex-shrink:0}
-.nav-item .nt{flex:1}
-.nav-item .nb{
-  font-size:9px;font-family:'IBM Plex Mono',monospace;
-  background:var(--ac);color:#000;padding:2px 6px;
-  border-radius:20px;font-weight:700;
-}
-.sb-foot{
-  padding:14px 16px;border-top:1px solid var(--bd);
-  font-size:10px;color:var(--mu);text-align:center;line-height:1.6;
-}
+.nav-item:hover{background:var(--s2);border-color:var(--bd)}
+.nav-item.active{background:rgba(26,95,168,.08);color:var(--ac);border-color:rgba(26,95,168,.25)}
+.nav-item .ni{font-size:20px;flex-shrink:0}
 
-/* ─── CLOSE BTN ─── */
 .sb-close{
   position:absolute;top:12px;right:12px;
   width:30px;height:30px;border-radius:50%;
-  background:var(--s2);border:1px solid var(--bd);
-  color:var(--tx);font-size:14px;cursor:pointer;
+  background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);
+  color:#fff;font-size:14px;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
+}
+.sb-foot{
+  padding:14px 16px;border-top:1px solid var(--bd);
+  font-size:13px;color:var(--mu);text-align:center;line-height:1.7;
 }
 
 /* ─── HEADER ─── */
 .hdr{
-  background:linear-gradient(180deg,#0a1628,var(--bg));
-  border-bottom:1px solid var(--bd);padding:16px 20px 12px;
+  background:linear-gradient(135deg,var(--hdr) 0%,var(--ac2) 100%);
+  border-bottom:2px solid rgba(255,255,255,.15);
+  padding:16px 20px 14px;
   text-align:center;position:relative;flex-shrink:0;
+  box-shadow:0 3px 12px rgba(26,63,107,.25);
+  color:#fff;
 }
 .hdr-menu{
-  position:absolute;left:16px;top:50%;transform:translateY(-50%);
-  width:40px;height:40px;border-radius:10px;
-  background:var(--s2);border:1px solid var(--bd);
-  color:var(--tx);font-size:18px;cursor:pointer;
+  position:absolute;left:14px;top:50%;transform:translateY(-50%);
+  width:42px;height:42px;border-radius:8px;
+  background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);
+  color:#fff;font-size:20px;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
   transition:background .15s;
 }
-.hdr-menu:hover{background:var(--bd)}
-.hdr-icon{font-size:28px;margin-bottom:2px}
-.hdr-title{font-size:16px;font-weight:700;letter-spacing:1px}
-.hdr-sub{font-size:9px;color:var(--mu);letter-spacing:2px;text-transform:uppercase}
-#clock{font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:600;color:var(--ac);letter-spacing:3px;margin:8px 0 2px;text-shadow:0 0 16px rgba(0,212,255,.4)}
-#date-lbl{font-size:11px;color:var(--mu);margin-bottom:2px}
+.hdr-menu:hover{background:rgba(255,255,255,.25)}
+.hdr-icon{font-size:30px;margin-bottom:2px}
+.hdr-title{font-size:20px;font-weight:700;letter-spacing:.5px;font-family:'Angsana New','Angsana','Sarabun',serif}
+.hdr-sub{font-size:10px;opacity:.8;letter-spacing:2px;text-transform:uppercase;font-family:'Sarabun',sans-serif}
+#clock{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:28px;font-weight:600;
+  color:#fff;letter-spacing:3px;margin:8px 0 2px;
+  text-shadow:0 0 20px rgba(255,255,255,.3);
+}
+#date-lbl{font-size:13px;opacity:.8;margin-bottom:2px}
 
 /* ─── PAGES ─── */
 .page{display:none;flex:1;flex-direction:column;}
 .page.active{display:flex;}
 
-/* ─── MAIN CONTENT ─── */
+/* ─── CARDS ─── */
 .wrap{padding:0 14px;flex:1;}
-.card{background:var(--s1);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-top:12px}
-.lbl{font-size:10px;font-weight:700;color:var(--mu);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px}
+.card{
+  background:var(--s1);border:1px solid var(--bd);
+  border-radius:12px;padding:16px;margin-top:12px;
+  box-shadow:0 2px 8px rgba(26,63,107,.07);
+}
+.lbl{
+  font-size:13px;font-weight:700;color:var(--ac);
+  letter-spacing:1px;text-transform:uppercase;
+  margin-bottom:10px;display:flex;align-items:center;gap:6px;
+  font-family:'Sarabun',sans-serif;
+}
+.lbl::after{content:'';flex:1;height:1px;background:var(--bd);margin-left:6px}
 
 /* employee */
-.emp-in{width:100%;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px 14px;font-size:20px;font-family:'IBM Plex Mono',monospace;color:var(--tx);outline:none;-webkit-appearance:none;transition:border-color .2s}
-.emp-in:focus{border-color:var(--ac)}
-.emp-in::placeholder{color:var(--mu);font-size:14px;font-family:'Sarabun',sans-serif}
-.emp-badge{display:none;margin-top:10px;padding:10px 12px;background:var(--s2);border-radius:10px;border-left:3px solid var(--gr);align-items:center;gap:10px}
+.emp-in{
+  width:100%;background:var(--s2);border:1.5px solid var(--bd);
+  border-radius:8px;padding:12px 14px;font-size:20px;
+  font-family:'IBM Plex Mono',monospace;color:var(--tx);
+  outline:none;-webkit-appearance:none;transition:border-color .2s,box-shadow .2s;
+}
+.emp-in:focus{border-color:var(--ac);box-shadow:0 0 0 3px rgba(26,95,168,.12)}
+.emp-in::placeholder{color:var(--mu);font-size:14px;font-family:'Angsana New','Angsana','Sarabun',serif}
+.emp-badge{display:none;margin-top:10px;padding:10px 14px;background:var(--s2);border-radius:8px;border-left:4px solid var(--gr);align-items:center;gap:10px}
 .emp-badge.show{display:flex}.emp-badge.err{border-left-color:var(--rd)}
 .emp-badge .ico{font-size:20px;flex-shrink:0}
-.emp-badge .nm{font-weight:700;font-size:14px}
-.emp-badge .sid{font-size:11px;color:var(--mu);font-family:'IBM Plex Mono',monospace}
+.emp-badge .nm{font-weight:700;font-size:16px}
+.emp-badge .sid{font-size:12px;color:var(--mu);font-family:'IBM Plex Mono',monospace}
 
 /* gps */
-#map{height:180px;border-radius:10px;border:1px solid var(--bd);overflow:hidden}
-.gps-row{display:flex;align-items:flex-start;gap:8px;margin-top:8px;font-size:12px;color:var(--mu);line-height:1.5}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--yw);flex-shrink:0;margin-top:3px}
+#map{height:175px;border-radius:8px;border:1px solid var(--bd);overflow:hidden}
+.gps-row{display:flex;align-items:flex-start;gap:8px;margin-top:8px;font-size:13px;color:var(--mu);line-height:1.5}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--yw);flex-shrink:0;margin-top:4px}
 .dot.ok{background:var(--gr)}.dot.err{background:var(--rd)}.dot.pulse{animation:blink 1.2s infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
 
 /* camera */
-.cam-box{position:relative;border-radius:10px;overflow:hidden;background:#000;aspect-ratio:4/3}
+.cam-box{position:relative;border-radius:8px;overflow:hidden;background:#0a0a0a;aspect-ratio:4/3;border:1px solid var(--bd)}
 #video{width:100%;height:100%;object-fit:cover;display:block;transform:scaleX(-1)}
 #preview{width:100%;height:100%;object-fit:cover;display:none}
-.cam-msg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.75);color:var(--mu);font-size:13px;text-align:center;padding:16px;gap:6px}
+.cam-msg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.72);color:#bbb;font-size:13px;text-align:center;padding:16px;gap:6px;font-family:'Sarabun',sans-serif}
 .cam-msg .mi{font-size:34px}.cam-msg.hidden{display:none}
 .sh-row{display:flex;align-items:center;justify-content:center;gap:24px;margin-top:12px}
-.shutter{width:64px;height:64px;border-radius:50%;background:#fff;border:4px solid #444;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .1s;flex-shrink:0}
+.shutter{width:62px;height:62px;border-radius:50%;background:var(--ac);border:3px solid var(--ac2);color:#fff;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .1s,box-shadow .15s;flex-shrink:0;box-shadow:0 4px 14px rgba(26,95,168,.3)}
 .shutter:active{transform:scale(.9)}.shutter:disabled{opacity:.3}
-.flip-btn{width:42px;height:42px;border-radius:50%;background:var(--s2);border:1px solid var(--bd);color:var(--tx);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.photo-ok{display:none;margin-top:8px;padding:8px 12px;border-radius:8px;background:rgba(0,230,118,.1);border:1px solid var(--gr);color:var(--gr);font-size:12px;font-weight:600;text-align:center}
+.flip-btn{width:42px;height:42px;border-radius:50%;background:var(--s2);border:1px solid var(--bd);color:var(--ac);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.photo-ok{display:none;margin-top:8px;padding:8px 12px;border-radius:8px;background:rgba(26,122,74,.08);border:1px solid var(--gr);color:var(--gr);font-size:14px;font-weight:700;text-align:center}
 .photo-ok.show{display:block}
-.retake-btn{display:none;width:100%;margin-top:8px;padding:11px;border:1px solid var(--bd);border-radius:10px;background:var(--s2);color:var(--mu);font-size:13px;font-family:'Sarabun',sans-serif;font-weight:700;cursor:pointer}
+.retake-btn{display:none;width:100%;margin-top:8px;padding:11px;border:1.5px solid var(--bd);border-radius:8px;background:var(--s2);color:var(--mu);font-size:15px;font-family:'Angsana New','Angsana','Sarabun',serif;font-weight:700;cursor:pointer}
 .retake-btn.show{display:block}
 
-/* buttons */
-.sub-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;margin-bottom:12px}
-.sub-btn{padding:16px 8px;border:none;border-radius:12px;font-size:16px;font-family:'Sarabun',sans-serif;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:transform .1s,opacity .15s}
-.sub-btn:active{transform:scale(.96)}.sub-btn:disabled{opacity:.25;cursor:not-allowed;transform:none}
-.btn-in{background:var(--gr);color:#000;box-shadow:0 4px 18px rgba(0,230,118,.25)}
-.btn-out{background:var(--rd);color:#fff;box-shadow:0 4px 18px rgba(255,77,77,.25)}
+/* submit buttons */
+.sub-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;margin-bottom:14px}
+.sub-btn{
+  padding:15px 8px;border:none;border-radius:10px;
+  font-size:18px;font-family:'Angsana New','Angsana','Sarabun',serif;font-weight:700;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;
+  transition:transform .1s,opacity .15s,box-shadow .15s;
+}
+.sub-btn:active{transform:scale(.96)}
+.sub-btn:disabled{opacity:.3;cursor:not-allowed;transform:none}
+.btn-in{background:var(--gr);color:#fff;box-shadow:0 4px 14px rgba(26,122,74,.25)}
+.btn-out{background:var(--rd);color:#fff;box-shadow:0 4px 14px rgba(192,57,43,.25)}
 
 /* toast */
-#toast{display:none;margin:12px 0 0;padding:14px 16px;border-radius:12px;border:1px solid;text-align:center}
+#toast{display:none;margin:12px 0 0;padding:14px 16px;border-radius:10px;border:1px solid;text-align:center}
 #toast.show{display:block;animation:fi .25s}
-#toast.success{background:rgba(0,230,118,.08);border-color:var(--gr)}
-#toast.error{background:rgba(255,77,77,.08);border-color:var(--rd)}
-#toast.loading{background:rgba(0,212,255,.08);border-color:var(--ac)}
-.t-icon{font-size:24px;margin-bottom:4px}.t-text{font-size:14px;font-weight:600}
+#toast.success{background:rgba(26,122,74,.07);border-color:var(--gr)}
+#toast.error{background:rgba(192,57,43,.07);border-color:var(--rd)}
+#toast.loading{background:rgba(26,95,168,.07);border-color:var(--ac)}
+.t-icon{font-size:24px;margin-bottom:4px}.t-text{font-size:16px;font-weight:700}
 @keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-
-/* ─── REPORT PAGE ─── */
-.rpt-wrap{padding:0 14px;flex:1;}
-.rpt-filter{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
-.rpt-filter input,.rpt-filter select{
-  flex:1;min-width:120px;background:var(--s2);border:1px solid var(--bd);
-  border-radius:10px;padding:10px 12px;font-size:13px;
-  font-family:'Sarabun',sans-serif;color:var(--tx);outline:none;
-}
-.rpt-filter input:focus,.rpt-filter select:focus{border-color:var(--ac)}
-.rpt-filter select option{background:var(--s2)}
-.rpt-btn{
-  padding:10px 18px;border:none;border-radius:10px;
-  background:var(--ac);color:#000;font-size:13px;
-  font-family:'Sarabun',sans-serif;font-weight:700;cursor:pointer;
-  white-space:nowrap;
-}
-.rpt-btn:active{opacity:.8}
-.rpt-sum{
-  display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;
-}
-.sum-card{
-  background:var(--s1);border:1px solid var(--bd);border-radius:12px;
-  padding:12px 10px;text-align:center;
-}
-.sum-card .sv{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;color:var(--ac)}
-.sum-card .sl{font-size:10px;color:var(--mu);margin-top:3px;text-transform:uppercase;letter-spacing:1px}
-.rpt-table-wrap{margin-top:12px;overflow-x:auto;border-radius:12px;border:1px solid var(--bd)}
-.rpt-table{width:100%;border-collapse:collapse;font-size:12px}
-.rpt-table th{background:var(--s2);padding:10px 12px;text-align:left;font-weight:700;color:var(--mu);letter-spacing:1px;font-size:10px;text-transform:uppercase;border-bottom:1px solid var(--bd)}
-.rpt-table td{padding:10px 12px;border-bottom:1px solid rgba(30,42,53,.6);vertical-align:middle}
-.rpt-table tr:last-child td{border-bottom:none}
-.rpt-table tr:hover td{background:rgba(255,255,255,.02)}
-.badge-in{display:inline-block;padding:2px 8px;border-radius:20px;background:rgba(0,230,118,.12);color:var(--gr);font-size:10px;font-weight:700}
-.badge-out{display:inline-block;padding:2px 8px;border-radius:20px;background:rgba(255,77,77,.12);color:var(--rd);font-size:10px;font-weight:700}
-.rpt-empty{padding:40px;text-align:center;color:var(--mu);font-size:13px}
-.rpt-load{padding:30px;text-align:center;color:var(--mu);font-size:13px}
 
 /* ─── FOOTER ─── */
 footer{
-  background:var(--s1);border-top:1px solid var(--bd);
+  background:var(--hdr);border-top:2px solid rgba(255,255,255,.1);
   padding:12px 16px;text-align:center;flex-shrink:0;
+  box-shadow:0 -2px 8px rgba(26,63,107,.15);
 }
-.ft-main{font-size:12px;font-weight:700;color:var(--tx);letter-spacing:.3px;margin-bottom:3px}
+.ft-main{font-size:15px;font-weight:700;color:#fff;letter-spacing:.3px;margin-bottom:3px}
 .ft-row{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
-.ft-dev{font-size:10px;color:var(--mu)}
-.ft-dev span{color:var(--ac);font-weight:700}
-.ft-sep{width:3px;height:3px;border-radius:50%;background:var(--bd)}
-.ft-note{font-size:10px;color:var(--mu)}
-.ft-note span{color:var(--yw)}
+.ft-dev{font-size:12px;color:rgba(255,255,255,.7)}
+.ft-dev span{color:#7ec8ff;font-weight:700}
+.ft-sep{width:3px;height:3px;border-radius:50%;background:rgba(255,255,255,.3)}
+.ft-note{font-size:12px;color:rgba(255,255,255,.7)}
+.ft-note span{color:#ffd77a}
+
+/* divider between cards */
+.section-divider{height:1px;background:var(--bd);margin:4px 0}
 </style>
 </head>
 <body>
 
-<!-- Sidebar Overlay -->
+<!-- Overlay -->
 <div id="overlay" onclick="closeSidebar()"></div>
 
 <!-- Sidebar -->
@@ -214,20 +222,20 @@ footer{
   </div>
   <div class="sb-nav">
     <div class="sb-nav-lbl">เมนูหลัก</div>
-    <div class="nav-item active" id="nav-att" onclick="showPage('attendance')">
+    <a class="nav-item active" id="nav-att"
+       href="https://sarawutc6689-cpu.github.io/FaceLogin/index.html">
       <span class="ni">🕐</span>
-      <span class="nt">ลงเวลาทำงาน</span>
-      <a href="https://sarawutc6689-cpu.github.io/FaceLogin/index.html" target="_blank" class="btn">
-    </div>
-    <div class="nav-item" id="nav-rpt" onclick="showPage('report')">
+      <span>ลงเวลาทำงาน</span>
+    </a>
+    <a class="nav-item" id="nav-rpt"
+       href="https://sarawutc6689-cpu.github.io/FaceLogin/admin.html">
       <span class="ni">📊</span>
-      <span class="nt">รายงาน</span>
-      <a href="https://sarawutc6689-cpu.github.io/FaceLogin/admin.html" target="_blank" class="btn">
-    </div>
+      <span>รายงาน</span>
+    </a>
   </div>
   <div class="sb-foot">
-  ระบบลงเวลาทำงานนอกสถานที่<br>
-    <span style="color:var(--ac)">พัฒนาโดย Sarawut.C</span>
+    v1.0 · ระบบลงเวลาทำงานนอกสถานที่<br>
+    <span style="color:var(--ac2);font-weight:700">พัฒนาโดย Sarawut.C</span>
   </div>
 </div>
 
@@ -235,16 +243,17 @@ footer{
 <div class="hdr">
   <button class="hdr-menu" onclick="openSidebar()">☰</button>
   <div class="hdr-icon">🏢</div>
-  <div class="hdr-title" id="page-title">ลงเวลาทำงาน</div>
+  <div class="hdr-title">ระบบลงเวลาทำงาน</div>
   <div class="hdr-sub">Attendance System</div>
   <div id="clock">--:--:--</div>
   <div id="date-lbl">--</div>
 </div>
 
-<!-- ═══ PAGE: ATTENDANCE ═══ -->
+<!-- Page: Attendance -->
 <div class="page active" id="page-attendance">
   <div class="wrap">
     <div id="toast"><div class="t-icon" id="t-icon"></div><div class="t-text" id="t-text"></div></div>
+
     <div class="card">
       <div class="lbl">👤 รหัสพนักงาน</div>
       <input class="emp-in" id="emp-id" type="text" placeholder="กรอกรหัสพนักงาน"
@@ -254,11 +263,13 @@ footer{
         <div><div class="nm" id="emp-nm"></div><div class="sid" id="emp-sid"></div></div>
       </div>
     </div>
+
     <div class="card">
       <div class="lbl">📍 ตำแหน่ง GPS</div>
       <div id="map"></div>
       <div class="gps-row"><div class="dot pulse" id="gps-dot"></div><span id="gps-txt">กำลังหาตำแหน่ง...</span></div>
     </div>
+
     <div class="card">
       <div class="lbl">📷 ถ่ายภาพยืนยัน</div>
       <div class="cam-box">
@@ -274,6 +285,7 @@ footer{
       <div class="photo-ok" id="photo-ok">✅ บันทึกภาพแล้ว — กดเข้า/ออกงานได้เลย</div>
       <button class="retake-btn" id="retake-btn" onclick="retake()">🔄 ถ่ายใหม่</button>
     </div>
+
     <div class="sub-row">
       <button class="sub-btn btn-in"  id="btn-in"  onclick="go('IN')"  disabled>🟢 เข้างาน</button>
       <button class="sub-btn btn-out" id="btn-out" onclick="go('OUT')" disabled>🔴 ออกงาน</button>
@@ -281,49 +293,23 @@ footer{
   </div>
 </div>
 
-<!-- ═══ PAGE: REPORT ═══ -->
-<div class="page" id="page-report">
-  <div class="rpt-wrap">
-    <div class="card">
-      <div class="lbl">🔍 ค้นหาข้อมูล</div>
-      <div class="rpt-filter">
-        <input type="text" id="rpt-emp" placeholder="รหัส / ชื่อพนักงาน" oninput="filterReport()">
-        <input type="date" id="rpt-date-from" onchange="filterReport()">
-        <input type="date" id="rpt-date-to" onchange="filterReport()">
-        <select id="rpt-status" onchange="filterReport()">
-          <option value="">ทุกสถานะ</option>
-          <option value="IN">เข้างาน</option>
-          <option value="OUT">ออกงาน</option>
-        </select>
-        <button class="rpt-btn" onclick="loadReport()">🔄 โหลด</button>
-      </div>
-    </div>
-
-    <div class="rpt-sum" id="rpt-sum" style="display:none">
-      <div class="sum-card"><div class="sv" id="sum-total">0</div><div class="sl">รายการ</div></div>
-      <div class="sum-card"><div class="sv" id="sum-in" style="color:var(--gr)">0</div><div class="sl">เข้างาน</div></div>
-      <div class="sum-card"><div class="sv" id="sum-out" style="color:var(--rd)">0</div><div class="sl">ออกงาน</div></div>
-    </div>
-
-    <div class="rpt-table-wrap" id="rpt-table-wrap">
-      <div class="rpt-empty">กด <strong>โหลด</strong> เพื่อดูข้อมูล</div>
-    </div>
+<!-- Footer -->
+<footer>
+  <div class="ft-main">🗂️ ระบบลงเวลาทำงานนอกสถานที่</div>
+  <div class="ft-row">
+    <span class="ft-dev">พัฒนาโดย <span>Sarawut.C</span></span>
+    <span class="ft-sep"></span>
+    <span class="ft-note"><span>⚠️</span> ใช้ภายในบริษัทเท่านั้น</span>
   </div>
-</div>
-
-
+</footer>
 
 <canvas id="canvas" style="display:none"></canvas>
 
 <script>
-// ════════════════════════════════════
 const API = "https://script.google.com/macros/s/AKfycbw0gZjV1IwUKtdag7N1JYOyyKqTNOQvEl59sezE4YWdflpaiLONEuej1RgNSVCsPQ-a-w/exec";
-// ════════════════════════════════════
 const O_LAT=14.57736759075333, O_LNG=100.79379214129247, RADIUS=100;
 let emp=null, gps=null, photo=null, facing='user', stream=null, empT=null, mapObj, pin;
-let rptAll=[], rptFiltered=[];
 
-// ─── SIDEBAR ───
 function openSidebar(){
   document.getElementById('sidebar').classList.add('open');
   document.getElementById('overlay').classList.add('open');
@@ -333,27 +319,9 @@ function closeSidebar(){
   document.getElementById('overlay').classList.remove('open');
 }
 
-// ─── PAGE NAVIGATION ───
-function showPage(page){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.getElementById('page-'+page).classList.add('active');
-  document.getElementById('nav-'+page.substring(0,3)).classList.add('active');
-  const titles={attendance:'ลงเวลาทำงาน',report:'รายงาน'};
-  document.getElementById('page-title').textContent=titles[page]||'';
-  closeSidebar();
-  if(page==='report') loadReport();
-}
-
-// ─── CLOCK ───
 document.addEventListener('DOMContentLoaded',()=>{
   clk(); setInterval(clk,1000);
   initMap(); initGPS(); initCam();
-  // default dates for report filter
-  const today=new Date().toISOString().split('T')[0];
-  const firstDay=new Date(new Date().getFullYear(),new Date().getMonth(),1).toISOString().split('T')[0];
-  document.getElementById('rpt-date-from').value=firstDay;
-  document.getElementById('rpt-date-to').value=today;
 });
 
 function clk(){
@@ -362,11 +330,10 @@ function clk(){
   document.getElementById('date-lbl').textContent=n.toLocaleDateString('th-TH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 }
 
-// ─── MAP ───
 function initMap(){
   mapObj=L.map('map',{zoomControl:false,attributionControl:false}).setView([O_LAT,O_LNG],17);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapObj);
-  L.circle([O_LAT,O_LNG],{radius:RADIUS,color:'#ff4d4d',fillColor:'#ff4d4d',fillOpacity:.1,weight:2}).addTo(mapObj);
+  L.circle([O_LAT,O_LNG],{radius:RADIUS,color:'#1a5fa8',fillColor:'#1a5fa8',fillOpacity:.1,weight:2}).addTo(mapObj);
   L.marker([O_LAT,O_LNG],{icon:L.divIcon({html:'🏢',className:'',iconSize:[24,24],iconAnchor:[12,12]})}).addTo(mapObj);
 }
 function setPin(lat,lng){
@@ -375,7 +342,6 @@ function setPin(lat,lng){
   mapObj.setView([lat,lng],17);
 }
 
-// ─── GPS ───
 function initGPS(){
   if(!navigator.geolocation){setGPS('err','❌ Browser ไม่รองรับ GPS');return;}
   setGPS('pulse','กำลังหาตำแหน่ง...');
@@ -396,7 +362,6 @@ function setGPS(s,t){
   document.getElementById('gps-txt').textContent=t;
 }
 
-// ─── CAMERA ───
 async function initCam(){await startCam('user');}
 async function startCam(f){
   if(stream) stream.getTracks().forEach(t=>t.stop());
@@ -447,7 +412,6 @@ function retake(){
   chk();
 }
 
-// ─── EMPLOYEE ───
 function onEmp(){
   emp=null; document.getElementById('emp-badge').className='emp-badge';
   clearTimeout(empT); chk();
@@ -479,7 +443,6 @@ function chk(){
   document.getElementById('btn-out').disabled=!ok;
 }
 
-// ─── SUBMIT ───
 async function go(type){
   if(!emp||!gps||!photo) return;
   toast('loading','⏳',type==='IN'?'กำลังลงเวลาเข้างาน...':'กำลังลงเวลาออกงาน...');
@@ -497,97 +460,6 @@ async function go(type){
 }
 function setBtns(d){document.getElementById('btn-in').disabled=d;document.getElementById('btn-out').disabled=d;}
 
-// ─── REPORT ───
-async function loadReport(){
-  const wrap=document.getElementById('rpt-table-wrap');
-  wrap.innerHTML='<div class="rpt-load">⏳ กำลังโหลดข้อมูล...</div>';
-  document.getElementById('rpt-sum').style.display='none';
-  try{
-    const r=await call('getAttendance',{});
-    if(r.result==='success'){
-      rptAll=r.data||[];
-      filterReport();
-    }else{
-      wrap.innerHTML='<div class="rpt-empty">❌ '+(r.message||'โหลดข้อมูลไม่ได้')+'</div>';
-    }
-  }catch{
-    wrap.innerHTML='<div class="rpt-empty">❌ เชื่อมต่อ server ไม่ได้</div>';
-  }
-}
-
-function filterReport(){
-  const q=(document.getElementById('rpt-emp').value||'').toLowerCase().trim();
-  const df=document.getElementById('rpt-date-from').value;
-  const dt=document.getElementById('rpt-date-to').value;
-  const st=document.getElementById('rpt-status').value;
-
-  rptFiltered=rptAll.filter(row=>{
-    const matchQ=!q||(row.employee_id||'').toLowerCase().includes(q)||(row.name||'').toLowerCase().includes(q);
-    const rowDate=(row.timestamp||'').split('T')[0]||row.date||'';
-    const matchFrom=!df||rowDate>=df;
-    const matchTo=!dt||rowDate<=dt;
-    const matchSt=!st||row.status===st;
-    return matchQ&&matchFrom&&matchTo&&matchSt;
-  });
-  renderReport();
-}
-
-function renderReport(){
-  const wrap=document.getElementById('rpt-table-wrap');
-  const sumEl=document.getElementById('rpt-sum');
-
-  if(!rptAll.length){
-    wrap.innerHTML='<div class="rpt-empty">ไม่มีข้อมูล — กด <strong>โหลด</strong> อีกครั้ง</div>';
-    sumEl.style.display='none'; return;
-  }
-
-  const inCount=rptFiltered.filter(r=>r.status==='IN').length;
-  const outCount=rptFiltered.filter(r=>r.status==='OUT').length;
-  document.getElementById('sum-total').textContent=rptFiltered.length;
-  document.getElementById('sum-in').textContent=inCount;
-  document.getElementById('sum-out').textContent=outCount;
-  sumEl.style.display='grid';
-
-  if(!rptFiltered.length){
-    wrap.innerHTML='<div class="rpt-empty">🔍 ไม่พบข้อมูลที่ค้นหา</div>';
-    return;
-  }
-
-  const rows=rptFiltered.slice().sort((a,b)=>{
-    const ta=a.timestamp||a.date||'';
-    const tb=b.timestamp||b.date||'';
-    return tb.localeCompare(ta);
-  }).map(r=>{
-    const ts=r.timestamp||r.date||'-';
-    let dateStr='-', timeStr='-';
-    try{
-      const d=new Date(ts);
-      if(!isNaN(d)){
-        dateStr=d.toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'2-digit'});
-        timeStr=d.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',hour12:false});
-      }
-    }catch{}
-    const badge=r.status==='IN'
-      ?'<span class="badge-in">🟢 เข้า</span>'
-      :'<span class="badge-out">🔴 ออก</span>';
-    return `<tr>
-      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:11px">${r.employee_id||'-'}</span></td>
-      <td>${r.name||'-'}</td>
-      <td>${badge}</td>
-      <td style="white-space:nowrap"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px">${dateStr}<br>${timeStr}</span></td>
-    </tr>`;
-  }).join('');
-
-  wrap.innerHTML=`
-    <table class="rpt-table">
-      <thead><tr>
-        <th>รหัส</th><th>ชื่อ</th><th>สถานะ</th><th>วันเวลา</th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>`;
-}
-
-// ─── API ───
 async function call(action,payload){
   const r=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,...payload})});
   if(!r.ok) throw new Error('HTTP '+r.status);
