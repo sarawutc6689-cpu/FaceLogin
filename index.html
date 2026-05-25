@@ -234,8 +234,8 @@ footer{
     </a>
   </div>
   <div class="sb-foot">
-    v1.0 · ระบบลงเวลาทำงานนอกสถานที่<br>
-    <span style="color:var(--ac2);font-weight:700">พัฒนาโดย Sarawut.C</span>
+     ระบบลงเวลาทำงานนอกสถานที่<br>
+    <span>พัฒนาโดย Sarawut.C</span>
   </div>
 </div>
 
@@ -295,9 +295,9 @@ footer{
 
 <!-- Footer -->
 <footer>
-  <div class="ft-main">🗂️ ระบบลงเวลาทำงานนอกสถานที่</div>
+  <div class="ft-main"> ระบบลงเวลาทำงานนอกสถานที่</div>
   <div class="ft-row">
-    <span class="ft-dev">พัฒนาโดย <span>Sarawut.C</span></span>
+    <span class="ft-dev">พัฒนาโดย Sarawut.C</span>
     <span class="ft-sep"></span>
     <span class="ft-note"><span>⚠️</span> ใช้ภายในบริษัทเท่านั้น</span>
   </div>
@@ -455,7 +455,11 @@ async function go(type){
       image:photo
     });
     toast(r.result==='success'?'success':'error',r.result==='success'?'✅':'❌',r.message);
-    if(r.result!=='success') setBtns(false);
+    if(r.result==='success'){
+      setTimeout(()=>location.reload(), 2000);
+    } else {
+      setBtns(false);
+    }
   }catch{toast('error','❌','เชื่อมต่อ server ไม่ได้');setBtns(false);}
 }
 function setBtns(d){document.getElementById('btn-in').disabled=d;document.getElementById('btn-out').disabled=d;}
