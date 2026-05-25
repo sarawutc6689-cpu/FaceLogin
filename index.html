@@ -188,6 +188,7 @@ body{
 #toast.loading{background:rgba(26,95,168,.07);border-color:var(--ac)}
 .t-icon{font-size:24px;margin-bottom:4px}.t-text{font-size:16px;font-weight:700}
 @keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
 
 /* ─── FOOTER ─── */
 footer{
@@ -203,8 +204,44 @@ footer{
 .ft-note{font-size:12px;color:rgba(255,255,255,.7)}
 .ft-note span{color:#ffd77a}
 
-/* divider between cards */
-.section-divider{height:1px;background:var(--bd);margin:4px 0}
+/* ─── LOGIN MODAL ─── */
+#login-modal{
+  display:none;position:fixed;inset:0;z-index:200;
+  align-items:center;justify-content:center;
+  background:rgba(10,30,60,.6);backdrop-filter:blur(4px);
+  padding:24px;
+}
+#login-modal.open{display:flex;animation:fi .2s}
+.modal-box{
+  background:var(--s1);border:1.5px solid var(--bd);
+  border-radius:16px;padding:28px 24px;width:100%;max-width:340px;
+  box-shadow:0 16px 48px rgba(26,63,107,.25);
+  text-align:center;
+}
+.modal-icon{font-size:40px;margin-bottom:8px}
+.modal-title{font-size:20px;font-weight:700;color:var(--tx);margin-bottom:4px}
+.modal-sub{font-size:13px;color:var(--mu);margin-bottom:20px;font-family:'Sarabun',sans-serif}
+.modal-input{
+  width:100%;background:var(--s2);border:1.5px solid var(--bd);
+  border-radius:8px;padding:13px 16px;font-size:18px;
+  font-family:'IBM Plex Mono',monospace;color:var(--tx);
+  outline:none;text-align:center;letter-spacing:4px;
+  transition:border-color .2s,box-shadow .2s;margin-bottom:6px;
+}
+.modal-input:focus{border-color:var(--ac);box-shadow:0 0 0 3px rgba(26,95,168,.12)}
+.modal-err{
+  font-size:13px;color:var(--rd);font-weight:700;
+  min-height:20px;margin-bottom:12px;font-family:'Sarabun',sans-serif;
+}
+.modal-row{display:flex;gap:10px}
+.modal-btn{
+  flex:1;padding:13px;border:none;border-radius:8px;
+  font-size:16px;font-family:'Angsana New','Angsana','Sarabun',serif;
+  font-weight:700;cursor:pointer;transition:opacity .15s,transform .1s;
+}
+.modal-btn:active{transform:scale(.96)}
+.modal-confirm{background:var(--ac);color:#fff;box-shadow:0 4px 12px rgba(26,95,168,.25)}
+.modal-cancel{background:var(--s2);color:var(--mu);border:1px solid var(--bd)}
 </style>
 </head>
 <body>
@@ -227,15 +264,15 @@ footer{
       <span class="ni">🕐</span>
       <span>ลงเวลาทำงาน</span>
     </a>
-    <a class="nav-item" id="nav-rpt"
-       href="https://sarawutc6689-cpu.github.io/FaceLogin/admin.html">
+    <a class="nav-item" id="nav-rpt" href="#" onclick="askLogin(event)">
       <span class="ni">📊</span>
       <span>รายงาน</span>
+      <span style="font-size:12px;opacity:.5">🔒</span>
     </a>
   </div>
   <div class="sb-foot">
-     ระบบลงเวลาทำงานนอกสถานที่<br>
-    <span>พัฒนาโดย Sarawut.C</span>
+    v1.0 · ระบบลงเวลาทำงานนอกสถานที่<br>
+    <span style="color:var(--ac2);font-weight:700">พัฒนาโดย Sarawut.C</span>
   </div>
 </div>
 
@@ -295,22 +332,69 @@ footer{
 
 <!-- Footer -->
 <footer>
-  <div class="ft-main"> ระบบลงเวลาทำงานนอกสถานที่</div>
+  <div class="ft-main">🗂️ ระบบลงเวลาทำงานนอกสถานที่</div>
   <div class="ft-row">
-    <span class="ft-dev">พัฒนาโดย Sarawut.C</span>
+    <span class="ft-dev">พัฒนาโดย <span>Sarawut.C</span></span>
     <span class="ft-sep"></span>
     <span class="ft-note"><span>⚠️</span> ใช้ภายในบริษัทเท่านั้น</span>
   </div>
 </footer>
 
-<canvas id="canvas" style="display:none"></canvas>
+<!-- Login Modal -->
+<div id="login-modal">
+  <div class="modal-box">
+    <div class="modal-icon">🔐</div>
+    <div class="modal-title">เข้าสู่ระบบรายงาน</div>
+    <div class="modal-sub">กรุณาใส่รหัสผ่านเพื่อเข้าถึงข้อมูล</div>
+    <input class="modal-input" id="modal-pw" type="password"
+      placeholder="••••••••" maxlength="20"
+      oninput="clearModalErr()"
+      onkeydown="if(event.key==='Enter')confirmLogin()">
+    <div class="modal-err" id="modal-err"></div>
+    <div class="modal-row">
+      <button class="modal-btn modal-cancel" onclick="closeLogin()">ยกเลิก</button>
+      <button class="modal-btn modal-confirm" onclick="confirmLogin()">✅ เข้าสู่ระบบ</button>
+    </div>
+  </div>
+</div>
+
 
 <script>
 const API = "https://script.google.com/macros/s/AKfycbw0gZjV1IwUKtdag7N1JYOyyKqTNOQvEl59sezE4YWdflpaiLONEuej1RgNSVCsPQ-a-w/exec";
 const O_LAT=14.57736759075333, O_LNG=100.79379214129247, RADIUS=100;
 let emp=null, gps=null, photo=null, facing='user', stream=null, empT=null, mapObj, pin;
 
-function openSidebar(){
+function askLogin(e){
+  e.preventDefault();
+  document.getElementById('modal-pw').value='';
+  document.getElementById('modal-err').textContent='';
+  document.getElementById('login-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('modal-pw').focus(),200);
+}
+function closeLogin(){
+  document.getElementById('login-modal').classList.remove('open');
+}
+function clearModalErr(){
+  document.getElementById('modal-err').textContent='';
+}
+function confirmLogin(){
+  const pw=document.getElementById('modal-pw').value;
+  if(pw==='mm169169'){
+    closeLogin();
+    window.location.href='https://sarawutc6689-cpu.github.io/FaceLogin/admin.html';
+  }else{
+    const err=document.getElementById('modal-err');
+    err.textContent='❌ รหัสผ่านไม่ถูกต้อง';
+    document.getElementById('modal-pw').value='';
+    document.getElementById('modal-pw').focus();
+    // shake animation
+    const box=document.querySelector('.modal-box');
+    box.style.animation='none';
+    box.offsetHeight; // reflow
+    box.style.animation='shake .35s ease';
+  }
+}
+
   document.getElementById('sidebar').classList.add('open');
   document.getElementById('overlay').classList.add('open');
 }
